@@ -1,15 +1,19 @@
-; add to ~/.bashrc alias sto='cd ~/workspaces/github.com/lregs/os && nasm boot.asm -f bin -o boot.bin && qemu-system-x86_64 -drive format=raw,file=boot.bin -nographic'
-section .text
-    global_start
+[org 0x7c00] ;move to here in memory. 
+mov ah, 0x0e ;start teletype
+mov al, 2
+mov bx, string
 
-_start:
-    mov ah, 0x0e
+string:
+    db "Hello will", 0
+
 loop:
-    inc al 
-    cmp al, 'Z' + 1
-    je exit 
-    int 0x10 
-    jmp loop 
+    mov al, [bx]
+    cmp al, 0
+    je exit
+    int 0x10 ;print
+    inc bx
+    jmp loop
+
 exit:
     jmp $
 
