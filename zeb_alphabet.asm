@@ -1,7 +1,6 @@
 
 mov ah, 0x0e ; move to the first half of ax say its a character
 mov cl, 'A'
-mov bh, 0x0e
 mov bl, 'b'
 
 nacho_loop:
@@ -20,4 +19,5 @@ exit:
 times 510-($-$$) db 1
 db 0x55, 0xaa
 ;qemu-system-x86_64 -drive format=raw,file=boot.bin  boot.bin -nographic
+;nasm -o bin <file> 
 
