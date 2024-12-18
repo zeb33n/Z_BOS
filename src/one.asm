@@ -32,7 +32,6 @@ main:
                 jmp loop
 
 printBuffer: 
-
         mov bx, string 
         mov ah, 0x0e
 
@@ -40,6 +39,7 @@ printBuffer:
         int 0x10
 
         xor cl, cl; initialise register for cleaning buffer
+
         ploop: 
                 mov al, [bx]
 
