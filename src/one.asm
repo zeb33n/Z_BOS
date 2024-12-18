@@ -1,10 +1,18 @@
-[org 0x7c00]
+[org 0x7c00] ; set required offset for dereferencing characters from buffers
 
 xor al, al ; set al to 0
+
 main: 
         mov bx, string ; pointer to bx 
+
+        mov ah, 0x0e ; teletype mode
         mov al, 10 ; newline character
         int 0x10 ; print interupt
+        int 0x10 
+        mov al, '>'
+        int 0x10
+        mov al, ' '
+        int 0x10
 
         loop:
                 mov ah, 0
