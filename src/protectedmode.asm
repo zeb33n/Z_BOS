@@ -16,7 +16,7 @@ mov cr0, eax
 jmp CODE_SEG:start_protected_mode
 
 jmp $
-                                    
+
                                      
 GDT_start:                          ; must be at the end of real mode code
     GDT_null:

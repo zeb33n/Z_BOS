@@ -56,6 +56,5 @@ printBuffer:
 
 jmp $ 
 
-
 times 510 - ($ - $$) db 0 ;510 bytes minus previous code define as 0 
 db 0x55, 0xaa ;special code that defines boot sector
