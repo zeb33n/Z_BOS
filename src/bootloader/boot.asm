@@ -1,5 +1,5 @@
 
-[org 0x7c00]                        
+[org 0x7c00]                        ; start of data segment
 KERNEL_LOCATION equ 0x1000
                                     
 
@@ -12,16 +12,16 @@ mov ds, ax
 mov bp, 0x8000
 mov sp, bp
 
-mov bx, KERNEL_LOCATION
-mov dh, 2
+mov bx, KERNEL_LOCATION ; we want to load the kwrnwl to the kernel location
+mov dh, 2 ;might have to change this number. number of sectors to read
 
 mov ah, 0x02
-mov al, dh 
+mov al, dh  ; number of sectors
 mov ch, 0x00
 mov dh, 0x00
 mov cl, 0x02
 mov dl, [BOOT_DISK]
-int 0x13                
+int 0x13                ;load from disk
 
                        ; error managment
 jc error               ; jump if carry flag is set
@@ -97,10 +97,10 @@ GDT_descriptor:
 
 [bits 32]
 start_protected_mode:
-    mov ax, DATA_SEG
-	mov ds, ax
-	mov ss, ax
-	mov es, ax
+    mov ax, DATA_SEG ;segment registers
+	mov ds, ax ;data segment
+	mov ss, ax ;stack segment
+	mov es, ax ;extra segments
 	mov fs, ax
 	mov gs, ax
 	
