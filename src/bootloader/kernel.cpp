@@ -21,18 +21,20 @@ void write_string(char* string, char fcolour, char bcolour, int x, int y) {
   }
 }
 
-// need to skip ascii values 58 to 64
+// maybe  indexing the characters from a constant would be easier -> quicker
 void write_base_int(int dec,
                     int base,
                     char fcolour,
                     char bcolour,
                     int x,
                     int y) {
+  char c;
   char* outstring;
   int counter = 0;
   while (dec != 0) {
-    outstring[counter] = dec % base + 0x30;
-    dec /= 10;
+    c = dec % base + 0x30;
+    outstring[counter] = c > '9' && c < 'A' ? c + 7 : c;
+    dec /= base;
     counter++;
   }
   for (int i = 1; i <= counter; i++) {
@@ -54,7 +56,7 @@ extern "C" int main() {
 
   write_char('B', 0xA, 0x1, 30, 2);
   // write_base_int(*foo, 16, 0xA, 0x1, 32, 4);
-  write_base_int(56789, 16, 0xA, 0x1, 32, 3);
+  write_base_int(0xb1A2F, 16, 0xA, 0x1, 32, 3);
   char string[] = "welcome to zebOS!";
   write_string(string, 0x0, 0xC, 79, 10);
   return 0;
