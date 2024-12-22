@@ -93,6 +93,8 @@ GDT_descriptor:
     dw GDT_end - GDT_start - 1
     dd GDT_start
 
+; need to refactor this file
+; load the idtp
 
 [bits 32]
 start_protected_mode:
