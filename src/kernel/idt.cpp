@@ -24,7 +24,7 @@ struct idt_ptr {
 struct idt_entry idt[256];
 struct idt_ptr _idtp;
 
-extern void _idt_load();
+extern "C" void _idt_load();
 
 void idt_set_gate(unsigned char num,
                   unsigned int base,
@@ -36,6 +36,9 @@ void idt_set_gate(unsigned char num,
   idt[num].sel = sel;
   idt[num].flags = flags;
 }
+
+// now we just need to set interrupt request functions using assemblt
+// first 32 are a good place to start
 
 void idt_install() {
   _idtp.limit = (sizeof(struct idt_entry) * 256) - 1;
