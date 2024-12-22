@@ -5,8 +5,10 @@
 // TODO:
 // 1. interrupts
 // 2. malloc
-// 3. paging https://wiki.osdev.org/Paging
+// 3. paging https://wiki.osdev.org/Paging,
+// https://wiki.osdev.org/Setting_Up_Paging
 //   - identity paging
+//   - uses the ps register
 // 4. processes
 
 void write_char(char c, char fcolour, char bcolour, int x, int y) {
