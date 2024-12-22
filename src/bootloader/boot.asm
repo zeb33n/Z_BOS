@@ -1,4 +1,3 @@
-
 [org 0x7c00]                        ; start of data segment
 KERNEL_LOCATION equ 0x1000
                                     
@@ -6,7 +5,7 @@ KERNEL_LOCATION equ 0x1000
 mov [BOOT_DISK], dl                 
 
                                     
-xor ax, ax                          
+xor ax, ax                           ;starting at 0x0
 mov es, ax
 mov ds, ax
 mov bp, 0x8000
@@ -69,15 +68,15 @@ BOOT_DISK: db 0
 
 GDT_start:
     GDT_null:
-        dd 0x0
-        dd 0x0
+        dd 0x0                         ; we get 4gb of memory in protected mode
+        dd 0x0                         ; flat memory model
 
     GDT_code:
-        dw 0xffff
-        dw 0x0
+        dw 0xffff                      ; we only define the first 16bits of the limit the real value is 0xfffff 
+        dw 0x0                         ; we multiply this value by 0x1000 as described in the flags
         db 0x0
-        db 0b10011010
-        db 0b11001111
+        db 0b10011010                  
+        db 0b11001111                  ; the last 4 bits of the limit are described here 0b1111
         db 0x0
 
     GDT_data:
@@ -97,16 +96,41 @@ GDT_descriptor:
 
 [bits 32]
 start_protected_mode:
-    mov ax, DATA_SEG ;segment registers
+    mov ax, DATA_SEG ;segment registers ; the value is 16 
 	mov ds, ax ;data segment
 	mov ss, ax ;stack segment
 	mov es, ax ;extra segments
 	mov fs, ax
 	mov gs, ax
-	
+
 	mov ebp, 0x90000		; 32 bit stack base pointer
 	mov esp, ebp
 
+    ; mov ebx, 0x10000
+    ; xor cl, cl
+    ; mov cl, 'A'
+    ; mov [ebx], cl
+	
+    ; ; print digit    
+    ; mov ax, [ebx]
+    ; mov ecx, 0xb8000 ;print digit
+    ; print_dec: 
+    ;     xor dx, dx
+    ;     mov bx, 10
+    ;     div bx ; remainder goes to dx
+
+    ;     xor ah, ah
+        
+    ;     mov bl, dl
+    ;     add bl, 0x30
+    ;     mov bh, 0x07
+    ;     mov [ecx], bx    
+
+    ;     add ecx, 2
+    ;     cmp ax, 0
+    ;     jne print_dec
+
+    
     jmp KERNEL_LOCATION
 
                                      
