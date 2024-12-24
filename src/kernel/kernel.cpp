@@ -13,20 +13,16 @@
 // 4. processes for malloc https://wiki.osdev.org/Writing_a_memory_manager
 
 extern "C" int main() {
-  idt_install();
-  isr_install();
-  // asm volatile("sti");
-  // char* foo = (char*)0x10000;
-  // register int* foo asm("ax");
-  char string[] = "12345";
+  // Notice how these functions are never called
+  // idt_install();
+  // isr_install();
+  char string[] = "Welcome to zeb OS!";
   write_base_int((unsigned long)string, 16, 0xA, 0x1, 32, 10);
-  // write_string(string, 0x0, 0xC, 79, 10);
+  write_string(string, 0x0, 0xC, 79, 12);
 
   write_char('B', 0xA, 0x1, 30, 2);
   write_char('Q', 0xA, 0x1, 32, 4);
   write_char('D', 0xA, 0x1, 30, 4);
   write_base_int(0xb1A2E, 16, 0xA, 0x1, 32, 3);
-  write_string("hello!", 0x0, 0xC, 79, 10);
-  int whatever = 1 / 0;
   return 0;
 }
