@@ -7,9 +7,11 @@ I think the string literall defined in `src/kernel/kernel.cpp` is being overwrit
 I can alter how much of the string is truncated by commenting out isrs in idt.asm. 
 
 ![image](https://github.com/user-attachments/assets/cbe5981f-e3a0-4614-a958-14486bf07a0b)
+
 more isrs commented. 
 
 ![image](https://github.com/user-attachments/assets/d7a75eaa-c6bf-499e-85ff-bc223c463409)
+
 less isrs commented
 
 Weird. I tried printing out the memory address of the isrs and couldn't think of any obvious overlap. Maybe something todo with segments? 
