@@ -40,6 +40,12 @@ global _isr30
 global _isr31
 global _syscall
 
+; we are beginning to overwrite the kernels stack?!?!?!
+; maybe the string literall?
+; If you comment out more or less of these functions you 
+; will see that more ore less ofd the string "welcome to zebOS!"
+; is truncated when you print it. 
+
 [extern _fault_handler] 
 _isr0:
 	cli
@@ -71,28 +77,26 @@ _isr5:
 	push byte 0
 	push byte 5
 	jmp isr_common_stub
-; _isr6:
-; 	cli
-; 	push byte 0
-; 	push byte 6
-; 	jmp isr_common_stub
-; _isr7:
-; 	cli
-; 	push byte 0
-; 	push byte 7
-; 	jmp isr_common_stub
-; we are beginning to overwrite the kernels stack?!?!?!
-; maybe the string literall?
-; _isr8:
-; 	cli
-; 	push byte 56
-; 	push byte 56
-; 	jmp isr_common_stub
-; _isr9:
-; 	cli
-; 	push byte 0
-; 	push byte 9
-; 	jmp isr_common_stub
+_isr6:
+	cli
+	push byte 0
+	push byte 6
+	jmp isr_common_stub
+_isr7:
+	cli
+	push byte 0
+	push byte 7
+	jmp isr_common_stub
+_isr8:
+	cli
+	push byte 56
+	push byte 56
+	jmp isr_common_stub
+_isr9:
+	cli
+	push byte 0
+	push byte 9
+	jmp isr_common_stub
 ; _isr10:
 ; 	cli
 ; 	push byte 0

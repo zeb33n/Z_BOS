@@ -98,8 +98,8 @@ void idt_install() {
 
   // I tried printing the memory address of the isrs and coulndt think of any
   // obvious overlaps
-  write_base_int((unsigned long)&idt, 16, 0xF, 0x1, 1, 1);
-  write_base_int((unsigned long)_isr0, 16, 0xF, 0x1, 1, 2);
+  // write_base_int((unsigned long)&idt, 16, 0xF, 0x1, 1, 1);
+  // write_base_int((unsigned long)_isr0, 16, 0xF, 0x1, 1, 2);
 
   memset(&idt, 0, sizeof(struct idt_entry) * 256);
 
