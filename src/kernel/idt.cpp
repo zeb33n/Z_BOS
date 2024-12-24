@@ -30,7 +30,7 @@ struct idt_entry idt[256];
 struct idt_ptr _idtp;
 
 extern "C" void _fault_handler() {
-  write_char('e', 0xE, 0x1, 20, 20);
+  write_string("Divide by 0!", 0xE, 0x1, 20, 20);
 }
 
 void idt_set_gate(unsigned char num,

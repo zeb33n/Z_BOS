@@ -19,7 +19,7 @@ _isr_generic:
 	push gs
 
 	cli
-	call _fault_handler		   ; checks if interrupt number < 32 (if it represents an exception)
+	call _fault_handler
 	hlt 
 	
 	pop gs
