@@ -18,10 +18,14 @@ extern "C" int main() {
 
   cursor_init(0, 0);
 
+  sprintln(WELCOMEMSG);
+
   iprintln(0xb1A2E, 16);
   sprintln("hello!");
 
   sprintln("lananas\nbanana");
+
+  sprintln("hi dad");
 
   int whatever = 1 / 0;
   return 0;
