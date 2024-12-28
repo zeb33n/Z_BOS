@@ -1,3 +1,14 @@
+
+typedef struct Cursor {
+  int x;
+  int y;
+} Cursor;
+
+const char BACKGROUND = 0x0;
+const char FOREGROUND = 0x7;
+
+Cursor CURSOR;
+
 void write_char(char c, char fcolour, char bcolour, int x, int y) {
   short colours = (bcolour << 4) | (fcolour & 0x0f);
   volatile short* where;
@@ -5,29 +16,89 @@ void write_char(char c, char fcolour, char bcolour, int x, int y) {
   *where = c | (colours << 8);  // load the value into the pointer
 }
 
-void write_string(const char* string,
-                  char fcolour,
-                  char bcolour,
-                  int x,
-                  int y) {
-  while (*string != '\0') {
-    write_char(*string, fcolour, bcolour, x, y);
-    string++;
-    x++;
-    if (x % 80 == 0) {
-      y++;
-      x = 0;
-    }
-  }
-}
+// void write_string(const char* string,
+//                   char fcolour,
+//                   char bcolour,
+//                   int x,
+//                   int y) {
+//   while (*string != '\0') {
+//     write_char(*string, fcolour, bcolour, x, y);
+//     string++;
+//     x++;
+//     if (x % 80 == 0) {
+//       y++;
+//       x = 0;
+//     }
+//   }
+// }
 
 // maybe  indexing the characters from a constant would be easier -> quicker
-void write_base_int(long integer,
-                    int base,
-                    char fcolour,
-                    char bcolour,
-                    int x,
-                    int y) {
+// void write_base_int(long integer,
+//                     int base,
+//                     char fcolour,
+//                     char bcolour,
+//                     int x,
+//                     int y) {
+//   char c;
+//   char* outstring;
+//   int counter = 0;
+//   if (integer == 0) {
+//     write_char('0', fcolour, bcolour, x, y);
+//     return;
+//   }
+//   while (integer != 0) {
+//     c = integer % base + 0x30;
+//     outstring[counter] = c > '9' && c < 'A' ? c + 7 : c;
+//     integer /= base;
+//     counter++;
+//   }
+//   for (int i = 1; i <= counter; i++) {
+//     write_char(outstring[counter - i], fcolour, bcolour, x, y);
+//     x++;
+//     if (x % 80 == 0) {
+//       y++;
+//       x = 0;
+//     }
+//   }
+// }
+
+// this my cursor we should move the vga cursor aswell
+void cursor_init(int x, int y) {
+  CURSOR = {x, y};
+}
+
+Cursor* cursor_get() {
+  return &CURSOR;
+}
+
+void sprintln(const char* string) {
+  Cursor* cursor = cursor_get();
+  while (*string != '\0') {
+    if (*string == '\n') {
+      cursor->y++;
+      cursor->x = 0;
+      string++;
+      continue;
+    }
+    write_char(*string, FOREGROUND, BACKGROUND, cursor->x, cursor->y);
+    cursor->x++;
+    string++;
+    if (cursor->x % 80 == 0) {
+      cursor->y++;
+      cursor->x = 0;
+    }
+  }
+  cursor->y++;
+  cursor->x = 0;
+};
+
+void iprintln(long integer, int base) {
+  Cursor* cursor = cursor_get();
+  if (integer == 0) {
+    write_char('0', FOREGROUND, BACKGROUND, cursor->x, cursor->y);
+    cursor->y++;
+    return;
+  }
   char c;
   char* outstring;
   int counter = 0;
@@ -38,11 +109,14 @@ void write_base_int(long integer,
     counter++;
   }
   for (int i = 1; i <= counter; i++) {
-    write_char(outstring[counter - i], fcolour, bcolour, x, y);
-    x++;
-    if (x % 80 == 0) {
-      y++;
-      x = 0;
+    write_char(outstring[counter - i], FOREGROUND, BACKGROUND, cursor->x,
+               cursor->y);
+    cursor->x++;
+    if (cursor->x % 80 == 0) {
+      cursor->y++;
+      cursor->x = 0;
     }
   }
+  cursor->y++;
+  cursor->x = 0;
 }

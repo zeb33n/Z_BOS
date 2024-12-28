@@ -12,7 +12,7 @@ mov bp, 0x8000
 mov sp, bp
 
 mov bx, KERNEL_LOCATION ; we want to load the kwrnwl to the kernel location
-mov dh, 2 ;might have to change this number. number of sectors to read
+mov dh, 3 ;might have to change this number. number of sectors to read
 
 mov ah, 0x02
 mov al, dh  ; number of sectors
@@ -105,7 +105,7 @@ start_protected_mode:
 	mov fs, ax
 	mov gs, ax
 
-	mov ebp, 0xA0000		; 32 bit stack base pointer
+	mov ebp, 0x90000		; 32 bit stack base pointer
 	mov esp, ebp
 
     ; ; print digit    

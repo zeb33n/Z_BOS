@@ -1,17 +1,9 @@
+#include "memory.h"
 #include "printing.h"
 
 extern "C" void _idt_load();
 
 extern "C" void _isr_generic();
-
-// todo move to memory file
-void* memset(void* dest, unsigned char val, int count) {
-  unsigned char* destC = (unsigned char*)dest;
-  int i;
-  for (i = 0; i < count; i++)
-    destC[i] = val;
-  return dest;
-}
 
 struct idt_entry {
   unsigned short base_lo;
@@ -30,7 +22,7 @@ struct idt_entry idt[256];
 struct idt_ptr _idtp;
 
 extern "C" void _fault_handler() {
-  write_char('e', 0xE, 0x1, 20, 20);
+  sprintln("Exception!");
 }
 
 void idt_set_gate(unsigned char num,
@@ -52,7 +44,6 @@ void idt_install() {
   _idtp.base = (unsigned long)&idt;
 
   // Clear out the entire IDT, initializing it to zeros
-  write_base_int((unsigned long)&idt, 16, 0xF, 0x1, 1, 1);
   memset(&idt, 0, sizeof(struct idt_entry) * 256);
 
   _idt_load();
