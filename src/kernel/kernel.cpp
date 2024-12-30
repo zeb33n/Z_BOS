@@ -12,11 +12,11 @@
 //   - uses the ps register
 // 4. processes for malloc https://wiki.osdev.org/Writing_a_memory_manager
 
-extern "C" int main() {
+extern "C" int _start() {
   idt_install();
   isr_install();
 
-  cursor_init(0, 0);
+  vga_init();
 
   sprintln(WELCOMEMSG);
 
@@ -27,6 +27,6 @@ extern "C" int main() {
 
   sprintln("hi dad");
 
-  int whatever = 1 / 0;
+  // int whatever = 1 / 0;
   return 0;
 }

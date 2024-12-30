@@ -11,6 +11,6 @@
 
 void sprintln(const char* string);
 
-void cursor_init(int x, int y);
+void vga_init();
 
 void iprintln(long integer, int base);

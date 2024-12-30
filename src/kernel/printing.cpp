@@ -9,6 +9,8 @@ const char FOREGROUND = 0x7;
 
 Cursor CURSOR;
 
+char SCREEN[25][80];
+
 void write_char(char c, char fcolour, char bcolour, int x, int y) {
   short colours = (bcolour << 4) | (fcolour & 0x0f);
   volatile short* where;
@@ -16,9 +18,26 @@ void write_char(char c, char fcolour, char bcolour, int x, int y) {
   *where = c | (colours << 8);  // load the value into the pointer
 }
 
+void printscreen() {
+  for (int y = 0; y < 25; y++) {
+    for (int x = 0; x < 80; x++) {
+      write_char(SCREEN[y][x], FOREGROUND, BACKGROUND, x, y);
+    }
+  }
+}
+
 // this my cursor we should move the vga cursor aswell
-void cursor_init(int x, int y) {
-  CURSOR = {x, y};
+void vga_init() {
+  CURSOR = {0, 0};
+
+  // init screen with nulls
+  for (int i = 0; i < 25; i++) {
+    for (int j = 0; j < 80; j++) {
+      SCREEN[i][j] = 0;
+    }
+  }
+
+  printscreen();
 }
 
 void newline() {
@@ -33,7 +52,8 @@ void sprintln(const char* string) {
       string++;
       continue;
     }
-    write_char(*string, FOREGROUND, BACKGROUND, CURSOR.x, CURSOR.y);
+    // write_char(*string, FOREGROUND, BACKGROUND, CURSOR.x, CURSOR.y);
+    SCREEN[CURSOR.y][CURSOR.x] = *string;
     CURSOR.x++;
     string++;
     if (CURSOR.x % 80 == 0) {
@@ -41,6 +61,7 @@ void sprintln(const char* string) {
     }
   }
   newline();
+  printscreen();
 };
 
 void iprintln(long integer, int base) {
@@ -59,12 +80,12 @@ void iprintln(long integer, int base) {
     counter++;
   }
   for (int i = 1; i <= counter; i++) {
-    write_char(outstring[counter - i], FOREGROUND, BACKGROUND, CURSOR.x,
-               CURSOR.y);
+    SCREEN[CURSOR.y][CURSOR.x] = outstring[counter - i];
     CURSOR.x++;
     if (CURSOR.x % 80 == 0) {
       newline();
     }
   }
   newline();
+  printscreen();
 }
