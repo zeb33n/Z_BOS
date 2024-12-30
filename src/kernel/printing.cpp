@@ -26,6 +26,18 @@ void printscreen() {
   }
 }
 
+void scroll_without_render() {
+  for (int i = 0; i < 24; i++) {
+    for (int j = 0; j < 80; j++) {
+      SCREEN[i][j] = SCREEN[i + 1][j];
+    }
+  }
+  for (int i = 0; i < 80; i++) {
+    SCREEN[24][i] = 0;
+  }
+  CURSOR.y--;
+}
+
 // this my cursor we should move the vga cursor aswell
 void vga_init() {
   CURSOR = {0, 0};
@@ -43,6 +55,9 @@ void vga_init() {
 void newline() {
   CURSOR.y++;
   CURSOR.x = 0;
+  if (CURSOR.y > 24) {
+    scroll_without_render();
+  }
 }
 
 void sprintln(const char* string) {
@@ -52,7 +67,6 @@ void sprintln(const char* string) {
       string++;
       continue;
     }
-    // write_char(*string, FOREGROUND, BACKGROUND, CURSOR.x, CURSOR.y);
     SCREEN[CURSOR.y][CURSOR.x] = *string;
     CURSOR.x++;
     string++;
@@ -66,8 +80,9 @@ void sprintln(const char* string) {
 
 void iprintln(long integer, int base) {
   if (integer == 0) {
-    write_char('0', FOREGROUND, BACKGROUND, CURSOR.x, CURSOR.y);
+    SCREEN[CURSOR.y][CURSOR.x] = '0';
     newline();
+    printscreen();
     return;
   }
   char c;

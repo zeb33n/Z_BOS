@@ -21,12 +21,17 @@ extern "C" int _start() {
   sprintln(WELCOMEMSG);
 
   iprintln(0xb1A2E, 16);
+  // iprintln(0, 10);
   sprintln("hello!");
 
   sprintln("lananas\nbanana");
 
   sprintln("hi dad");
 
-  // int whatever = 1 / 0;
+  // for (int i = 0; i < 2000; i++) {
+  //   sprintln("a\nb\nc\nd\n");
+  // }
+
+  int whatever = 1 / 0;
   return 0;
 }
