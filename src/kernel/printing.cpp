@@ -1,5 +1,8 @@
 // TODO support coloured text
 // TODO move the vga mode cursor
+
+#include "portio.h"
+
 typedef struct Cursor {
   int x;
   int y;
@@ -53,12 +56,32 @@ void vga_init() {
   printscreen();
 }
 
+void cursor_set(int x, int y) {  // Does some I/O black magic
+  short pos = y * 80 + x;
+  if (pos >= 0 && pos < 2000) {
+    outb(0x3d4, 0x0f);
+    outb(0x3d5, (char)(pos & 0xff));
+    outb(0x3d4, 0x0e);
+    outb(0x3d5, (char)((pos >> 8) & 0xff));
+  }
+}
+
 void newline() {
   CURSOR.y++;
   CURSOR.x = 0;
   if (CURSOR.y > 24) {
     scroll_without_render();
   }
+  cursor_set(CURSOR.x, CURSOR.y);
+  printscreen();  // slow: calling here renders twice in some instances
+}
+
+void cursorlr(int d) {
+  CURSOR.x += d;
+  if (CURSOR.x > 79) {
+    newline();
+  }
+  cursor_set(CURSOR.x, CURSOR.y);
 }
 
 void sprintln(const char* string) {
@@ -69,11 +92,8 @@ void sprintln(const char* string) {
       continue;
     }
     SCREEN[CURSOR.y][CURSOR.x] = *string;
-    CURSOR.x++;
     string++;
-    if (CURSOR.x % 80 == 0) {
-      newline();
-    }
+    cursorlr(1);
   }
   newline();
   printscreen();
@@ -97,10 +117,7 @@ void iprintln(long integer, int base) {
   }
   for (int i = 1; i <= counter; i++) {
     SCREEN[CURSOR.y][CURSOR.x] = outstring[counter - i];
-    CURSOR.x++;
-    if (CURSOR.x % 80 == 0) {
-      newline();
-    }
+    cursorlr(1);
   }
   newline();
   printscreen();
@@ -109,10 +126,11 @@ void iprintln(long integer, int base) {
 // we can probably abstract this out in the other functions
 // be careful calling print screen for every new character though
 void cprint(char c) {
-  SCREEN[CURSOR.y][CURSOR.x] = c;
-  CURSOR.x++;
-  if (CURSOR.x > 79) {
+  if (c == '\n') {
     newline();
+    return;
   }
+  SCREEN[CURSOR.y][CURSOR.x] = c;
+  cursorlr(1);
   printscreen();
 }

@@ -4,25 +4,25 @@
 char get_ascii(unsigned char scancode, int shift) {
   switch (scancode) {
     case 0x02:
-      return '1';
+      return shift ? '!' : '1';
     case 0x03:
-      return '2';
+      return shift ? '"' : '2';
     case 0x04:
-      return '3';
+      return shift ? '$' : '3';
     case 0x05:
-      return '4';
+      return shift ? '$' : '4';
     case 0x06:
-      return '5';
+      return shift ? '%' : '5';
     case 0x07:
-      return '6';
+      return shift ? '^' : '6';
     case 0x08:
-      return '7';
+      return shift ? '&' : '7';
     case 0x09:
-      return '8';
+      return shift ? '*' : '8';
     case 0x0A:
-      return '9';
+      return shift ? '(' : '9';
     case 0x0B:
-      return '0';
+      return shift ? ')' : '0';
     case 0x10:
       return shift ? 'Q' : 'q';
     case 0x11:
@@ -75,6 +75,8 @@ char get_ascii(unsigned char scancode, int shift) {
       return shift ? 'N' : 'n';
     case 0x32:
       return shift ? 'M' : 'm';
+    case 0x1c:
+      return '\n';
     case 0x39:
       return ' ';
     default:
@@ -96,6 +98,7 @@ void keyboard_handle() {
   unsigned char scancode = inb(0x60);
 
   // iprintln((short)scancode, 16);
+
   // if top bit set key released
   if (scancode & 0b10000000) {
     if (scancode == LSHIFTR || scancode == RSHIFTR) {

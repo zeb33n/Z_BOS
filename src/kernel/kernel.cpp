@@ -23,15 +23,6 @@ extern "C" int _start() {
 
   sprintln(WELCOMEMSG);
 
-  iprintln(0xB1A2E, 16);
-  // iprintln(0, 10);
-  sprintln("hello!");
-
-  sprintln("lananas\nbanana");
-
-  // int whatever = 1 / 0;
-  sprintln("hi dad");
-
   for (;;) {
   }
   return 0;
