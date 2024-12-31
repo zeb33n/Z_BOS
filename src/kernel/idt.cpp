@@ -1,3 +1,4 @@
+#include "keyboard.h"
 #include "memory.h"
 #include "portio.h"
 #include "printing.h"
@@ -85,11 +86,6 @@ extern "C" void _less_than_40() {
 }
 
 // not working try timer one instead
-void keyboard_handle() {
-  unsigned char scancode = inb(0x60);
-  iprintln((short)scancode, 16);
-  sprintln("key pressed!");
-}
 
 extern "C" void _keyboard_handler() {
   keyboard_handle();

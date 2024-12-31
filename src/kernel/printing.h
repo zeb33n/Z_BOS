@@ -14,3 +14,5 @@ void sprintln(const char* string);
 void vga_init();
 
 void iprintln(long integer, int base);
+
+void cprint(char c);

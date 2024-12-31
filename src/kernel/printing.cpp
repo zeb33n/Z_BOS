@@ -105,3 +105,14 @@ void iprintln(long integer, int base) {
   newline();
   printscreen();
 }
+
+// we can probably abstract this out in the other functions
+// be careful calling print screen for every new character though
+void cprint(char c) {
+  SCREEN[CURSOR.y][CURSOR.x] = c;
+  CURSOR.x++;
+  if (CURSOR.x > 79) {
+    newline();
+  }
+  printscreen();
+}
