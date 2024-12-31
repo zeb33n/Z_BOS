@@ -123,8 +123,6 @@ void iprintln(long integer, int base) {
   printscreen();
 }
 
-// we can probably abstract this out in the other functions
-// be careful calling print screen for every new character though
 void cprint(char c) {
   if (c == '\n') {
     newline();

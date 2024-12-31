@@ -23,6 +23,11 @@ extern "C" int _start() {
 
   sprintln(WELCOMEMSG);
 
+  iprintln(0xabc, 16);
+  sprintln(
+      "thisisareallylongstringthatimadetottesthowhethermyprintingworksproperlyi"
+      "dontknowwhyIdidntputanyspcaesinitlololol");
+
   for (;;) {
   }
   return 0;
