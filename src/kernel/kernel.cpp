@@ -15,23 +15,24 @@
 extern "C" int _start() {
   idt_install();
   isr_install();
+  irq_install();
+
+  asm volatile("sti");
 
   vga_init();
 
   sprintln(WELCOMEMSG);
 
-  iprintln(0xb1A2E, 16);
+  iprintln(0xB1A2E, 16);
   // iprintln(0, 10);
   sprintln("hello!");
 
   sprintln("lananas\nbanana");
 
+  // int whatever = 1 / 0;
   sprintln("hi dad");
 
-  // for (int i = 0; i < 2000; i++) {
-  //   sprintln("a\nb\nc\nd\n");
-  // }
-
-  int whatever = 1 / 0;
+  for (;;) {
+  }
   return 0;
 }

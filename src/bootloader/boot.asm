@@ -12,7 +12,7 @@ mov bp, 0x8000
 mov sp, bp
 
 mov bx, KERNEL_LOCATION ; we want to load the kwrnwl to the kernel location
-mov dh, 4 ;might have to change this number. number of sectors to read
+mov dh, 20 ;might have to change this number. number of sectors to read
 
 mov ah, 0x02
 mov al, dh  ; number of sectors
