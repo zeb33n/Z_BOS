@@ -61,6 +61,9 @@ void isr_install() {
   idt_set_gate(0, (unsigned long)_isr_generic, 0x08, 0x8E);
 }
 
+// moves the irqs from the default position to start at isr 32
+// since by default they overlap with the protected mode isrs
+// reserved for exceptions.
 void irq_remap() {
   outb(0x20, 0x11);  // Initialize both PICs
   outb(0xA0, 0x11);

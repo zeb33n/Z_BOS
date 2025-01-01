@@ -1,6 +1,8 @@
 #include "portio.h"
 #include "printing.h"
 
+// TODO: add arrowkeys and backspace
+
 char get_ascii(unsigned char scancode, int shift) {
   switch (scancode) {
     case 0x02:
