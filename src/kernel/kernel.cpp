@@ -1,4 +1,5 @@
 #include "idt.h"
+#include "keyboard.h"
 #include "printing.h"
 
 // TODO:
@@ -20,6 +21,7 @@ extern "C" int _start() {
   asm volatile("sti");
 
   vga_init();
+  keyboard_default();
 
   sprintln(WELCOMEMSG);
 

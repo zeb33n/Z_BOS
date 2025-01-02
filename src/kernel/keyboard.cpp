@@ -2,89 +2,47 @@
 #include "portio.h"
 #include "printing.h"
 
-// TODO: add arrowkeys and backspace
+// TODO figure out modes -> rewrite?
+// have an array of all the characters -> index is the scancode
+// this is the mapping
+// function pointer to handle what to do for each thing
 
-char get_ascii(unsigned char scancode, int shift) {
-  switch (scancode) {
-    case 0x02:
-      return shift ? '!' : '1';
-    case 0x03:
-      return shift ? '"' : '2';
-    case 0x04:
-      return shift ? '$' : '3';
-    case 0x05:
-      return shift ? '$' : '4';
-    case 0x06:
-      return shift ? '%' : '5';
-    case 0x07:
-      return shift ? '^' : '6';
-    case 0x08:
-      return shift ? '&' : '7';
-    case 0x09:
-      return shift ? '*' : '8';
-    case 0x0A:
-      return shift ? '(' : '9';
-    case 0x0B:
-      return shift ? ')' : '0';
-    case 0x10:
-      return shift ? 'Q' : 'q';
-    case 0x11:
-      return shift ? 'W' : 'w';
-    case 0x12:
-      return shift ? 'E' : 'e';
-    case 0x13:
-      return shift ? 'R' : 'r';
-    case 0x14:
-      return shift ? 'T' : 't';
-    case 0x15:
-      return shift ? 'Y' : 'y';
-    case 0x16:
-      return shift ? 'U' : 'u';
-    case 0x17:
-      return shift ? 'I' : 'i';
-    case 0x18:
-      return shift ? 'O' : 'o';
-    case 0x19:
-      return shift ? 'P' : 'p';
-    case 0x1e:
-      return shift ? 'A' : 'a';
-    case 0x1f:
-      return shift ? 'S' : 's';
-    case 0x20:
-      return shift ? 'D' : 'd';
-    case 0x21:
-      return shift ? 'F' : 'f';
-    case 0x22:
-      return shift ? 'G' : 'g';
-    case 0x23:
-      return shift ? 'H' : 'h';
-    case 0x24:
-      return shift ? 'J' : 'j';
-    case 0x25:
-      return shift ? 'K' : 'k';
-    case 0x26:
-      return shift ? 'L' : 'l';
-    case 0x2C:
-      return shift ? 'Z' : 'z';
-    case 0x2D:
-      return shift ? 'X' : 'x';
-    case 0x2E:
-      return shift ? 'C' : 'c';
-    case 0x2F:
-      return shift ? 'V' : 'v';
-    case 0x30:
-      return shift ? 'B' : 'b';
-    case 0x31:
-      return shift ? 'N' : 'n';
-    case 0x32:
-      return shift ? 'M' : 'm';
-    case 0x1c:
-      return '\n';
-    case 0x39:
-      return ' ';
-    default:
-      return 0;
-  }
+char MAPPING[128];
+char MAPPING_SHIFT[128];
+
+const char MAP_DEFAULT[128] = {
+    0,   ESC, '1',    '2',   '3',  '4',    '5',   '6',  '7',   '8', '9', '0',
+    '-', '=', BSPACE, TAB,   'q',  'w',    'e',   'r',  't',   'y', 'u', 'i',
+    'o', 'p', '[',    ']',   '\n', CTRL,   'a',   's',  'd',   'f', 'g', 'h',
+    'j', 'k', 'l',    ';',   '\'', '#',    SHIFT, '\\', 'z',   'x', 'c', 'v',
+    'b', 'n', 'm',    ',',   '.',  '/',    SHIFT, 0,    0,     ' ', 0,   0,
+    0,   0,   0,      0,     0,    0,      0,     0,    0,     0,   0,   0,
+    AUP, 0,   '-',    ALEFT, 0,    ARIGHT, '+',   0,    ADOWN, 0,   0,   0,
+    0,   0,   0,      0,     0,    0,  // 90 here
+};
+
+const char SHIFT_DEFAULT[128] =
+    {
+        0,   ESC, '!',    '"',   '$',  '$',    '%',   '^', '&',   '*', '(', ')',
+        '_', '+', BSPACE, TAB,   'Q',  'W',    'E',   'R', 'T',   'Y', 'U', 'I',
+        'O', 'P', '{',    '}',   '\n', CTRL,   'A',   'S', 'D',   'F', 'G', 'H',
+        'J', 'K', 'L',    ':',   '@',  '~',    SHIFT, '|', 'Z',   'X', 'C', 'V',
+        'B', 'B', 'M',    '<',   '>',  '?',    SHIFT, 0,   0,     ' ', 0,   0,
+        0,   0,   0,      0,     0,    0,      0,     0,   0,     0,   0,   0,
+        AUP, 0,   '0',    ALEFT, 0,    ARIGHT, '0',   0,   ADOWN, 0,   0,   0,
+        0,   0,   0,      0,     0,    0,  // 90 here
+};
+
+// void keyboard_load_mode(Mode mode) {}
+
+void keyboard_load_mapping(const char* normal_layer, const char* shift_layer) {
+  *MAPPING = *normal_layer;
+  *MAPPING_SHIFT = *shift_layer;
+}
+
+// TODO this is borken
+void keyboard_default() {
+  keyboard_load_mapping(MAP_DEFAULT, SHIFT_DEFAULT);
 }
 
 void keyboard_handle() {
@@ -97,21 +55,17 @@ void keyboard_handle() {
 
   // if top bit set key released
   if (scancode & 0b10000000) {
-    if (scancode == LSHIFTR || scancode == RSHIFTR) {
+    scancode = scancode ^ 0b10000000;
+    if (MAP_DEFAULT[scancode] == SHIFT) {
       shift = 0;
     }
     return;
   }
 
-  char cout = get_ascii(scancode, shift);
-  if (cout) {
-    cprint(cout);
-    return;
-  }
+  char cout = shift ? SHIFT_DEFAULT[scancode] : MAP_DEFAULT[scancode];
 
-  switch (scancode) {
-    case LSHIFT:
-    case RSHIFT:
+  switch (cout) {
+    case SHIFT:
       shift = 1;
       return;
     case BSPACE:
@@ -128,6 +82,9 @@ void keyboard_handle() {
       return;
     case ARIGHT:
       cursorlr(1);
+      return;
+    default:
+      cprint(cout);
       return;
   }
 }
