@@ -10,7 +10,7 @@
 char MAPPING[128];
 char MAPPING_SHIFT[128];
 
-const char MAP_DEFAULT[128] = {
+char MAP_DEFAULT[128] = {
     0,   ESC, '1',    '2',   '3',  '4',    '5',   '6',  '7',   '8', '9', '0',
     '-', '=', BSPACE, TAB,   'q',  'w',    'e',   'r',  't',   'y', 'u', 'i',
     'o', 'p', '[',    ']',   '\n', CTRL,   'a',   's',  'd',   'f', 'g', 'h',
@@ -21,7 +21,7 @@ const char MAP_DEFAULT[128] = {
     0,   0,   0,      0,     0,    0,  // 90 here
 };
 
-const char SHIFT_DEFAULT[128] =
+char SHIFT_DEFAULT[128] =
     {
         0,   ESC, '!',    '"',   '$',  '$',    '%',   '^', '&',   '*', '(', ')',
         '_', '+', BSPACE, TAB,   'Q',  'W',    'E',   'R', 'T',   'Y', 'U', 'I',
@@ -33,11 +33,14 @@ const char SHIFT_DEFAULT[128] =
         0,   0,   0,      0,     0,    0,  // 90 here
 };
 
+KeyMap KEYMAP;
+
 // void keyboard_load_mode(Mode mode) {}
 
-void keyboard_load_mapping(const char* normal_layer, const char* shift_layer) {
-  *MAPPING = *normal_layer;
-  *MAPPING_SHIFT = *shift_layer;
+// i dont think this is safe!
+void keyboard_load_mapping(char* normal_layer, char* shift_layer) {
+  KEYMAP.normal = normal_layer;
+  KEYMAP.shift = shift_layer;
 }
 
 // TODO this is borken
@@ -62,7 +65,7 @@ void keyboard_handle() {
     return;
   }
 
-  char cout = shift ? SHIFT_DEFAULT[scancode] : MAP_DEFAULT[scancode];
+  char cout = shift ? KEYMAP.shift[scancode] : KEYMAP.normal[scancode];
 
   switch (cout) {
     case SHIFT:
