@@ -84,6 +84,17 @@ void cursorlr(int d) {
   cursor_set(CURSOR.x, CURSOR.y);
 }
 
+void cursordu(int d) {
+  if (CURSOR.y == 24 && d > 0) {
+    return;
+  }
+  if (CURSOR.y == 0 && d < 0) {
+    return;
+  }
+  CURSOR.y += d;
+  cursor_set(CURSOR.x, CURSOR.y);
+}
+
 void sprintln(const char* string) {
   while (*string != '\0') {
     if (*string == '\n') {
@@ -96,6 +107,20 @@ void sprintln(const char* string) {
     cursorlr(1);
   }
   newline();
+  printscreen();
+};
+
+void sprint(const char* string) {
+  while (*string != '\0') {
+    if (*string == '\n') {
+      newline();
+      string++;
+      continue;
+    }
+    SCREEN[CURSOR.y][CURSOR.x] = *string;
+    string++;
+    cursorlr(1);
+  }
   printscreen();
 };
 
@@ -120,6 +145,18 @@ void iprintln(long integer, int base) {
     cursorlr(1);
   }
   newline();
+  printscreen();
+}
+
+// have a buffer and buffer delete in a tty echo server fingee
+// maybe need malloc for that
+// can maybe depreciate!
+void cdelete() {
+  cursorlr(-1);
+  for (int i = CURSOR.x; i < 79; i++) {
+    SCREEN[CURSOR.y][i] = SCREEN[CURSOR.y][i + 1];
+  }
+  SCREEN[CURSOR.y][79] = 0;
   printscreen();
 }
 

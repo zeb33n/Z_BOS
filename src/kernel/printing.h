@@ -11,8 +11,16 @@
 
 void sprintln(const char* string);
 
+void sprint(const char* string);
+
 void vga_init();
 
 void iprintln(long integer, int base);
 
 void cprint(char c);
+
+void cdelete();
+
+void cursorlr(int d);
+
+void cursordu(int d);

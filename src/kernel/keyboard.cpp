@@ -1,3 +1,4 @@
+#include "keyboard.h"
 #include "portio.h"
 #include "printing.h"
 
@@ -86,13 +87,6 @@ char get_ascii(unsigned char scancode, int shift) {
   }
 }
 
-enum keys {
-  LSHIFT = 0x2a,
-  RSHIFT = 0x36,
-  LSHIFTR = 0xaa,
-  RSHIFTR = 0xb6,
-};
-
 void keyboard_handle() {
   // preserve between function calls
   static int shift = 0;
@@ -119,5 +113,21 @@ void keyboard_handle() {
     case LSHIFT:
     case RSHIFT:
       shift = 1;
+      return;
+    case BSPACE:
+      cdelete();
+      return;
+    case AUP:
+      cursordu(-1);
+      return;
+    case ADOWN:
+      cursordu(1);
+      return;
+    case ALEFT:
+      cursorlr(-1);
+      return;
+    case ARIGHT:
+      cursorlr(1);
+      return;
   }
 }
