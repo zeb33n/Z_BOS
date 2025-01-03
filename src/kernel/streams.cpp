@@ -1,18 +1,21 @@
 // we should use malloc to define arbitarty streams but lets just use a buffer
 // for now. Needs revisiting when we have multiple processes.
 
+// TODO put mutexs in there own file
+
 typedef char Mutex;  // maybe better as a struct?
 
 typedef struct Stream {
   int count;
   Mutex message;
   Mutex slot;
-  char queue[1000];
+  char queue[10];
 } Stream;
 
-Stream STDIN = {0, 0, 1, {}};
+Stream STDIN = {0, 0, 1, {'\0'}};
 
 // RACE condition? what if 2 processes are waiting at once
+// need to use a counting semaphore?
 void wait(Mutex* mutex) {
   for (;;) {
     if (*mutex) {
@@ -40,7 +43,7 @@ char stdin_get() {
 
 void stdin_put(char c) {
   wait(&STDIN.slot);
-  if (STDIN.count >= 1000) {
+  if (STDIN.count >= 10) {
     return;
   }
   STDIN.queue[STDIN.count] = c;

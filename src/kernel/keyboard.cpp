@@ -64,7 +64,7 @@ void keyboard_handle() {
 
   char cout = shift ? KEYMAP.shift[scancode] : KEYMAP.normal[scancode];
 
-  if (cout == shift) {
+  if (cout == SHIFT) {
     shift = 1;
     return;
   }
