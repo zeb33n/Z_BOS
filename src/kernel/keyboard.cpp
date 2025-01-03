@@ -1,14 +1,12 @@
 #include "keyboard.h"
 #include "portio.h"
 #include "printing.h"
+#include "streams.h"
 
 // TODO figure out modes -> rewrite?
 // have an array of all the characters -> index is the scancode
 // this is the mapping
 // function pointer to handle what to do for each thing
-
-char MAPPING[128];
-char MAPPING_SHIFT[128];
 
 char MAP_DEFAULT[128] = {
     0,   ESC, '1',    '2',   '3',  '4',    '5',   '6',  '7',   '8', '9', '0',
@@ -37,13 +35,12 @@ KeyMap KEYMAP;
 
 // void keyboard_load_mode(Mode mode) {}
 
-// i dont think this is safe!
+// need to think about how to expose to user land safely
 void keyboard_load_mapping(char* normal_layer, char* shift_layer) {
   KEYMAP.normal = normal_layer;
   KEYMAP.shift = shift_layer;
 }
 
-// TODO this is borken
 void keyboard_default() {
   keyboard_load_mapping(MAP_DEFAULT, SHIFT_DEFAULT);
 }
@@ -67,27 +64,10 @@ void keyboard_handle() {
 
   char cout = shift ? KEYMAP.shift[scancode] : KEYMAP.normal[scancode];
 
-  switch (cout) {
-    case SHIFT:
-      shift = 1;
-      return;
-    case BSPACE:
-      cdelete();
-      return;
-    case AUP:
-      cursordu(-1);
-      return;
-    case ADOWN:
-      cursordu(1);
-      return;
-    case ALEFT:
-      cursorlr(-1);
-      return;
-    case ARIGHT:
-      cursorlr(1);
-      return;
-    default:
-      cprint(cout);
-      return;
+  if (cout == shift) {
+    shift = 1;
+    return;
   }
+
+  stdin_put(cout);
 }

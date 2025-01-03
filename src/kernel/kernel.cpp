@@ -1,6 +1,7 @@
 #include "idt.h"
 #include "keyboard.h"
 #include "printing.h"
+#include "shell.h"
 
 // TODO:
 // 0. TTY
@@ -30,6 +31,7 @@ extern "C" int _start() {
   //     "thisisareallylongstringthatimadetottesthowhethermyprintingworksproperlyi"
   //     "dontknowwhyIdidntputanyspcaesinitlololol");
 
+  shell_init();
   for (;;) {
   }
   return 0;
