@@ -10,6 +10,9 @@
 // register int* esp asm("esp");
 // iprintln(*esp, 16);
 
+// TODO get rid of the flicker. only have to reprint from the cursor not the
+// whole buffer
+
 typedef struct CmdBuffer {
   int cursor;
   int size;
@@ -34,9 +37,10 @@ void buffer_remove() {
   }
   CB->size--;
   CB->buffer[CB->size] = '\0';
-  cursorlr(-1 - CB->cursor);
+
+  cursorlr(-1);
   clear_line_from_cursor();
-  sprint(CB->buffer);
+  sprint(CB->buffer + CB->cursor);
   cursorlr(-(CB->size - CB->cursor));
   CB->cursor--;
 }
@@ -50,10 +54,11 @@ void buffer_insert(char c) {
     CB->buffer[i] = CB->buffer[i - 1];
   }
   CB->buffer[CB->cursor] = c;
-  cursorlr(-CB->cursor);
+
   clear_line_from_cursor();
-  sprint(CB->buffer);
+  sprint(CB->buffer + CB->cursor);
   cursorlr(-(CB->size - CB->cursor));
+
   CB->size++;
 }
 
@@ -66,7 +71,7 @@ void buffer_left() {
 }
 
 void buffer_right() {
-  if (CB->cursor >= 255) {
+  if (CB->cursor >= CB->size - 1) {
     return;
   }
   CB->cursor++;
