@@ -160,6 +160,13 @@ void cdelete() {
   printscreen();
 }
 
+void clear_line_from_cursor() {
+  for (int i = CURSOR.x; i < 80; i++) {
+    SCREEN[CURSOR.y][i] = 0;
+  }
+  printscreen();
+}
+
 void cprint(char c) {
   if (c == '\n') {
     newline();
