@@ -11,7 +11,7 @@ binaries="../Binaries/"
 
 nasm "${bootloader}boot.asm" -f bin -o "${binaries}boot.bin"
 nasm "${bootloader}kernel_entry.asm" -f elf -o "${binaries}kernel_entry.o"
-nasm "${kernel}idt.asm" -f elf -o "${binaries}idt_entry.o"
+nasm "${kernel}idtasm.asm" -f elf -o "${binaries}idt_entry.o"
 i386-elf-gcc -ffreestanding -m32 -g -c "${kernel}kernel.cpp"  -o "${binaries}kernel.o"
 i386-elf-gcc -ffreestanding -m32 -g -c "${kernel}idt.cpp" -o "${binaries}idt.o"
 i386-elf-gcc -ffreestanding -m32 -g -c "${drivers}printing.cpp"  -o "${binaries}printing.o"
