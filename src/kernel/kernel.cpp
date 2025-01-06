@@ -1,7 +1,7 @@
+#include "../drivers/keyboard.h"
+#include "../drivers/printing.h"
+#include "../shell/shell.h"
 #include "idt.h"
-#include "keyboard.h"
-#include "printing.h"
-#include "shell.h"
 
 // TODO:
 // 0. TTY

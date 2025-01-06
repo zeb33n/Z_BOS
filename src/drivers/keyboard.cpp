@@ -1,7 +1,7 @@
+#include "../drivers/printing.h"
+#include "../utils/portio.h"
+#include "../utils/streams.h"
 #include "keyboard.h"
-#include "portio.h"
-#include "printing.h"
-#include "streams.h"
 
 // TODO figure out modes -> rewrite?
 // have an array of all the characters -> index is the scancode

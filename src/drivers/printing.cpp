@@ -1,7 +1,7 @@
 // TODO support coloured text
 // TODO move the vga mode cursor
 
-#include "portio.h"
+#include "../utils/portio.h"
 
 typedef struct Cursor {
   int x;
