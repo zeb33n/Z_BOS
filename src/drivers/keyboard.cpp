@@ -1,7 +1,7 @@
+#include "../drivers/printing.h"
+#include "../utils/portio.h"
+#include "../utils/streams.h"
 #include "keyboard.h"
-#include "portio.h"
-#include "printing.h"
-#include "streams.h"
 
 // TODO figure out modes -> rewrite?
 // have an array of all the characters -> index is the scancode
@@ -25,7 +25,7 @@ char SHIFT_DEFAULT[128] =
         '_', '+', BSPACE, TAB,   'Q',  'W',    'E',   'R', 'T',   'Y', 'U', 'I',
         'O', 'P', '{',    '}',   '\n', CTRL,   'A',   'S', 'D',   'F', 'G', 'H',
         'J', 'K', 'L',    ':',   '@',  '~',    SHIFT, '|', 'Z',   'X', 'C', 'V',
-        'B', 'B', 'M',    '<',   '>',  '?',    SHIFT, 0,   0,     ' ', 0,   0,
+        'B', 'N', 'M',    '<',   '>',  '?',    SHIFT, 0,   0,     ' ', 0,   0,
         0,   0,   0,      0,     0,    0,      0,     0,   0,     0,   0,   0,
         AUP, 0,   '0',    ALEFT, 0,    ARIGHT, '0',   0,   ADOWN, 0,   0,   0,
         0,   0,   0,      0,     0,    0,  // 90 here

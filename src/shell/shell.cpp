@@ -1,7 +1,7 @@
-#include "keyboard.h"
-#include "memory.h"
-#include "printing.h"
-#include "streams.h"
+#include "../drivers/keyboard.h"
+#include "../drivers/printing.h"
+#include "../utils/memory.h"
+#include "../utils/streams.h"
 
 // causes issues when stack allocated / doesn't get allocated on stack when
 // called in a function? some compiler funny buisness?

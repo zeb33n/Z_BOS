@@ -1,7 +1,7 @@
-#include "keyboard.h"
-#include "memory.h"
-#include "portio.h"
-#include "printing.h"
+#include "../drivers/keyboard.h"
+#include "../drivers/printing.h"
+#include "../utils/memory.h"
+#include "../utils/portio.h"
 
 extern "C" void _idt_load();
 
