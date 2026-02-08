@@ -27,7 +27,6 @@ prebuild:
 	rm -rf $(BIN)
 	mkdir $(BIN)
 
-
 elf: $(ASMELFS) 
 
 $(ASMELFS): %: %.asm

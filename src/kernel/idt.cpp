@@ -2,12 +2,15 @@
 #include "../drivers/printing.h"
 #include "../utils/memory.h"
 #include "../utils/portio.h"
+#include "../utils/timer.h"
 
 extern "C" void _idt_load();
 
 extern "C" void _isr_generic();
 
 extern "C" void _irq_keyboard();
+
+extern "C" void _irq_timer();
 
 extern "C" void _irq_under_40();
 
@@ -52,6 +55,7 @@ void idt_install() {
 
 extern "C" void _fault_handler() {
   sprintln("Exception!");
+  outb(0x20, 0x20);
 }
 
 void isr_install() {
@@ -97,10 +101,15 @@ extern "C" void _keyboard_handler() {
   // sprintln("double finished");
 }
 
+extern "C" void _timer_handler() {
+  timer_handle();
+  outb(0x20, 0x20);
+}
+
 void irq_install() {
   irq_remap();
 
-  idt_set_gate(32, (unsigned long)_irq_under_40, 0x08, 0x8E);
+  idt_set_gate(32, (unsigned long)_irq_timer, 0x08, 0x8E);
   idt_set_gate(33, (unsigned long)_irq_keyboard, 0x08, 0x8E);
   idt_set_gate(34, (unsigned long)_irq_under_40, 0x08, 0x8E);
   idt_set_gate(35, (unsigned long)_irq_under_40, 0x08, 0x8E);

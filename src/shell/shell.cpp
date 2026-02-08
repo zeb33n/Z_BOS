@@ -2,6 +2,8 @@
 #include "../drivers/printing.h"
 #include "../utils/memory.h"
 #include "../utils/streams.h"
+#include "../utils/strings.h"
+#include "../utils/timer.h"
 
 // causes issues when stack allocated / doesn't get allocated on stack when
 // called in a function? some compiler funny buisness?
@@ -75,6 +77,14 @@ void buffer_right() {
   cursorlr(1);
 }
 
+void parse_cmd(char* cmd) {
+  if (strstartswith(cmd, "sleep ")) {
+    sleep(str2uint(cmd + 6, 10));
+  } else {
+    sprintln(cmd);
+  }
+}
+
 void shell_init() {
   buffer_reset();
   sprint("> ");
@@ -95,7 +105,7 @@ void shell_init() {
         break;
       case '\n':
         sprintln("");
-        sprintln(CB->buffer);
+        parse_cmd(CB->buffer);
         buffer_reset();
         sprint("> ");
         break;
