@@ -1,7 +1,6 @@
-#include "../drivers/printing.h"
 #include "portio.h"
 
-volatile int countdown;
+volatile int countdown = 0;
 
 // default frequency is 1.193182MHz
 // divide by count to set interval
@@ -21,18 +20,7 @@ void timer_handle() {
 }
 
 void sleep(int millis) {
-  // iprintln(millis, 10);
   countdown = millis;
-  int print = 1;
-  int last = countdown;
   while (countdown > 0) {
-    if (print == 1) {
-      // iprintln(countdown, 10);
-      print = 0;
-    }
-    if (countdown < last) {
-      last = countdown;
-      print = 1;
-    }
   }
 }

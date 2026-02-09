@@ -79,7 +79,12 @@ void buffer_right() {
 
 void parse_cmd(char* cmd) {
   if (strstartswith(cmd, "sleep ")) {
-    sleep(str2uint(cmd + 6, 10));
+    int millis;
+    if (str2uint(&millis, cmd + 6, 10) != STR_SUC) {
+      sprintln("ERROR");
+      return;
+    }
+    sleep(millis);
   } else {
     sprintln(cmd);
   }

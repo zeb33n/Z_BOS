@@ -8,8 +8,8 @@ typedef struct Cursor {
   int y;
 } Cursor;
 
-const char BACKGROUND = 0x0;
-const char FOREGROUND = 0x7;
+const char BACKGROUND = 0x6;
+const char FOREGROUND = 0xE;
 
 Cursor CURSOR;
 

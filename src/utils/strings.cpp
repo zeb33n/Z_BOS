@@ -1,4 +1,5 @@
 #include "maths.h"
+#include "strings.h"
 
 int strstartswith(char* str, const char* comp) {
   int out = 1;
@@ -18,20 +19,19 @@ int strstartswith(char* str, const char* comp) {
 int strlen(const char* str) {
   int i = 0;
   do {
-    ;
   } while (str[i++] != '\0');
   return i - 1;
 }
 
-int str2uint(const char* str, int base) {
-  int out = 0;
+StrStatus str2uint(int* out, const char* str, int base) {
+  *out = 0;
   int j = 0;
   for (int i = strlen(str) - 1; i >= 0; i--) {
     if (str[i] > 0x3A) {
-      return -1;
+      return STR_ERR;
     }
-    out += (str[i] - 0x30) * pow(base, j);
+    *out += (str[i] - 0x30) * pow(base, j);
     j++;
   }
-  return out;
+  return STR_SUC;
 }
