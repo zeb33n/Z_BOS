@@ -17,7 +17,7 @@ ASMELFS := src/kernel/idtasm src/bootloader/kernel_entry
 all: prebuild build
 
 run: prebuild build
-	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=floppy,  -m 128M
+	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide,  -m 256M
 
 build: bin elf c
 	$(LD) -o $(BIN)/full_kernel.bin -Ttext 0x1000 $(shell find $(BIN) -name "*.o" | xargs)  --oformat binary
