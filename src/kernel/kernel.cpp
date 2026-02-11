@@ -28,11 +28,13 @@ extern "C" int _start() {
   keyboard_default();
 
   sprintln(WELCOMEMSG);
+
   char writestr[256] = "bananas";
   write_28bit(MASTER, 1, 1, (short*)writestr);
   char readstr[512];
   read_28bit(MASTER, 1, 2, (short*)readstr);
   sprintln(readstr);
+
   shell_init();
   for (;;) {
   }

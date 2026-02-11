@@ -7,6 +7,8 @@
 typedef enum {
   DISK_ERR_NO_DRIVE,
   DISK_ERR_NOT_ATA,
+  DISK_ERR_SECTOR_OVERFLOW,
+  DISK_ERR_UNRECOGNISED_CMD,
   DISK_SUCCESS,
 } DiskStatus;
 
@@ -15,7 +17,6 @@ typedef struct {
   int sectors48;
 } DiskInfo;
 
-DiskStatus identify(int drive);
 void disk_drive_init(int drive);
 void read_28bit(int drive, int lba, char sectorcount, short* ptr);
 void write_28bit(int drive, int lba, char sectorcount, short* ptr);

@@ -50,7 +50,7 @@ DiskStatus identify(int drive) {
   return DISK_SUCCESS;
 }
 
-int check_status(DiskStatus s) {
+int disk_status_handle(DiskStatus s) {
   switch (s) {
     case DISK_ERR_NO_DRIVE:
       sprintln("NO DRIVE FOUND");
@@ -58,25 +58,35 @@ int check_status(DiskStatus s) {
     case DISK_ERR_NOT_ATA:
       sprintln("DISK IS NOT ATA");
       return 0;
-    default:
+    case DISK_ERR_UNRECOGNISED_CMD:
+      sprintln("UNRECOGNISED DISK COMMAND");
+      return 0;
+    case DISK_ERR_SECTOR_OVERFLOW:
+      sprintln("SECTOR OVERFLOW");
+      return 0;
+    case DISK_SUCCESS:
       return 1;
   }
 }
 
 void disk_drive_init(int drive) {
-  if (!check_status(identify(drive))) {
+  if (!disk_status_handle(identify(drive))) {
     return;
   }
   disk_info.sectors28 = *(int*)(data_buffer + 60);
   disk_info.sectors48 = *(long long*)(data_buffer + 100);
 }
 
-void send_28bit_command(int drive,
-                        int lba,
-                        char sectorcount,
-                        short* ptr,
-                        char cmd) {
-  if (!check_status(identify(drive))) {
+void read_io_port(short* ptr) {
+  *ptr = inw(0x1F0);
+}
+
+void write_io_port(short* ptr) {
+  outw(0x1F0, *ptr);
+}
+
+void send_28bit_command(int drive, int lba, char count, short* ptr, char cmd) {
+  if (!disk_status_handle(identify(drive))) {
     return;
   }
   // Wait until not busy
@@ -85,14 +95,26 @@ void send_28bit_command(int drive,
 
   delay_400ns();
   outb(0x1F6, (drive + 0x40) | ((lba >> 24) & 0x0F));
-  outb(0x1F2, sectorcount);
+  outb(0x1F2, count);
   outb(0x1F3, (char)lba);
   outb(0x1F4, (char)(lba >> 8));
   outb(0x1F5, (char)(lba >> 16));
   outb(0x1F7, cmd);
   delay_400ns();
 
-  for (int i = 0; i < sectorcount; i++) {
+  void (*io_func)(short*);
+  switch (cmd) {
+    case WRITE:
+      io_func = &write_io_port;
+      break;
+    case READ:
+      io_func = &read_io_port;
+      break;
+    default:
+      disk_status_handle(DISK_ERR_UNRECOGNISED_CMD);
+  }
+
+  for (int i = 0; i < count; i++) {
     // Wait until not busy
     while (inb(0x1F7) & 0x80) {
     }
@@ -100,13 +122,7 @@ void send_28bit_command(int drive,
     while (!(inb(0x1F7) & 0x40)) {
     }
     for (int j = 0; j < 256; j++) {
-      // use a function pointer here maybe
-      if (cmd == WRITE) {
-        outw(0x1F0, ptr[j]);
-      }
-      if (cmd == READ) {
-        ptr[j] = inw(0x1F0);
-      }
+      io_func(&(ptr[j]));
     }
     ptr += 256;
   }
