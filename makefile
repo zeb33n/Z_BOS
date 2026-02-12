@@ -16,8 +16,11 @@ ASMELFS := src/kernel/idtasm src/bootloader/kernel_entry
 
 all: prebuild build
 
-run: prebuild build
+run: prebuild build resize
 	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide,  -m 256M
+
+resize:
+	qemu-img resize $(BIN)/OS.bin 1G
 
 build: bin elf c
 	$(LD) -o $(BIN)/full_kernel.bin -Ttext 0x1000 $(shell find $(BIN) -name "*.o" | xargs)  --oformat binary

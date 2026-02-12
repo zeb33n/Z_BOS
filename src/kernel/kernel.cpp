@@ -32,7 +32,9 @@ extern "C" int _start() {
   char writestr[256] = "bananas";
   write_28bit(MASTER, 1, 1, (short*)writestr);
   char readstr[512];
+  iprintln((long)&readstr, 16);
   read_28bit(MASTER, 1, 2, (short*)readstr);
+  iprintln((long)&readstr, 16);
   sprintln(readstr);
 
   shell_init();

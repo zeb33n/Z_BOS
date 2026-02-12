@@ -12,7 +12,7 @@ mov bp, 0x8000
 mov sp, bp
 
 mov bx, KERNEL_LOCATION ; we want to load the kernel to the kernel location
-mov dh, 30 ;might have to change this number. number of sectors to read
+mov dh, BOOT_SECTORS ;might have to change this number. number of sectors to read
 
 mov ah, 0x02
 mov al, dh  ; number of sectors
@@ -25,7 +25,7 @@ int 0x13                ;load from disk
                        ; error managment
 mov bx, errorLoad
 jc error               ; jump if carry flag is set
-cmp al, 30
+cmp al, BOOT_SECTORS
 jne error
 
 
@@ -68,6 +68,7 @@ errorMem:
 
                                     
 BOOT_DISK: db 0
+BOOT_SECTORS equ 30
 
 GDT_start:
     GDT_null:

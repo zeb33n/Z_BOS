@@ -75,6 +75,7 @@ void disk_drive_init(int drive) {
   }
   disk_info.sectors28 = *(int*)(data_buffer + 60);
   disk_info.sectors48 = *(long long*)(data_buffer + 100);
+  iprintln(disk_info.sectors28, 10);
 }
 
 void read_io_port(short* ptr) {
