@@ -3,5 +3,6 @@ typedef enum {
   STR_SUC,
 } StrStatus;
 
-int strstartswith(char* str, const char* comp);
+int strcmp(const char* str, const char* comp);
+int strstartswith(const char* str, const char* comp);
 StrStatus str2uint(int* out, const char* str, int base);

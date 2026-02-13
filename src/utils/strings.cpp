@@ -1,8 +1,18 @@
 #include "maths.h"
 #include "strings.h"
 
-int strstartswith(char* str, const char* comp) {
-  int out = 1;
+int strcmp(const char* str, const char* comp) {
+  for (int i = 0;; i++) {
+    if (str[i] != comp[i]) {
+      return 0;
+    }
+    if (comp[i] == '\0') {
+      return 1;
+    }
+  }
+}
+
+int strstartswith(const char* str, const char* comp) {
   for (int i = 0;; i++) {
     if (comp[i] == '\0') {
       return 1;

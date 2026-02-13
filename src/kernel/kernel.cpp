@@ -2,6 +2,7 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/printing.h"
 #include "../shell/shell.h"
+#include "../utils/strings.h"
 #include "../utils/timer.h"
 #include "idt.h"
 
@@ -29,13 +30,17 @@ extern "C" int _start() {
 
   sprintln(WELCOMEMSG);
 
+  // test disk driver
+  sprint("test disk... ");
   char writestr[256] = "bananas";
   write_28bit(MASTER, 1, 1, (short*)writestr);
   char readstr[512];
-  iprintln((long)&readstr, 16);
   read_28bit(MASTER, 1, 2, (short*)readstr);
-  iprintln((long)&readstr, 16);
-  sprintln(readstr);
+  if (strcmp("bananas", readstr)) {
+    sprintln("[ok]");
+  } else {
+    sprintln("[error]");
+  }
 
   shell_init();
   for (;;) {
