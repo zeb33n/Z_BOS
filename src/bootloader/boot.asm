@@ -109,7 +109,7 @@ start_protected_mode:
 	mov fs, ax
 	mov gs, ax
 
-	mov ebp, 0x10000		; 32 bit stack base pointer
+	mov ebp, 0x60000		; 32 bit stack base pointer
 	mov esp, ebp
 
     ; ; print digit    

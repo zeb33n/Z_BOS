@@ -2,8 +2,10 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/printing.h"
 #include "../shell/shell.h"
+#include "../utils/memory.h"
 #include "../utils/strings.h"
 #include "../utils/timer.h"
+#include "filesystem.h"
 #include "idt.h"
 
 // TODO:
@@ -26,11 +28,13 @@ extern "C" int _start() {
 
   vga_init();
   disk_drive_init(MASTER);
+  kheap_init();
   keyboard_default();
 
   sprintln(WELCOMEMSG);
 
   // test disk driver
+  // TODO tests to their own file
   sprint("test disk... ");
   char writestr[256] = "bananas";
   write_28bit(MASTER, 1, 1, (short*)writestr);
@@ -41,6 +45,10 @@ extern "C" int _start() {
   } else {
     sprintln("[error]");
   }
+
+  iprintln((long)kmalloc(0x40), 16);
+  iprintln((long)kmalloc(0x81), 16);
+  iprintln((long)kmalloc(64), 16);
 
   shell_init();
   for (;;) {
