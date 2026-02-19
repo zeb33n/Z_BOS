@@ -46,9 +46,20 @@ extern "C" int _start() {
     sprintln("[error]");
   }
 
-  iprintln((long)kmalloc(0x40), 16);
-  iprintln((long)kmalloc(0x81), 16);
-  iprintln((long)kmalloc(64), 16);
+  // Need to debug why this doesnt work
+  sprint("test kmalloc... ");
+  void* a = kmalloc(0x40);
+  kmalloc(0x40);
+  kfree(a);
+  long b = (long)kmalloc(0x81);
+  long c = (long)kmalloc(64);
+  long d = (long)kmalloc(0x70);
+  if (b == HEAP_BASE + SLAB_SIZE * 2 && c == HEAP_BASE &&
+      d == HEAP_BASE + SLAB_SIZE * 5) {
+    sprintln("[ok]");
+  } else {
+    sprintln("[error]");
+  }
 
   shell_init();
   for (;;) {

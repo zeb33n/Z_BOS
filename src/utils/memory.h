@@ -11,4 +11,5 @@ typedef struct Slab {
 void memcopy(void* dest, void* data, int count);
 void* memset(void* dest, unsigned char val, int count);
 void* kmalloc(int size);
+void kfree(void* ptr);
 void kheap_init();

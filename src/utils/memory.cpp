@@ -1,4 +1,3 @@
-#include "../drivers/printing.h"
 #include "memory.h"
 #include "types.h"
 
@@ -36,37 +35,46 @@ void kheap_init() {
 // TODO make sure you dont overwrite the stack
 void* kmalloc(int size) {
   // easy exit if we need less than one slab of mem
-  void* out_ptr = free_list;
-  if (size <= SLAB_SIZE) {
-    free_list = free_list->next;
-    return out_ptr;
-  }
+  Slab* out_ptr = free_list;
+  // if (size <= SLAB_SIZE) {
+  //   free_list = free_list->next;
+  //   return out_ptr;
+  // }
 
   // find n contiguous slabs
   int n_contig_slabs = (size + SLAB_SIZE - 1) / SLAB_SIZE;
+  Slab* last = (Slab*)NULL;
   Slab* slab = free_list;
-  out_ptr = free_list;
-  Slab* last = {(Slab*)NULL};
 
   while (slab != NULL) {
     int count = n_contig_slabs - 1;
-    Slab* prev;
+    // Slab* prev;
     while ((char*)slab->next - SLAB_SIZE == (char*)slab && count) {
-      prev = slab;
+      // prev = slab;
       slab = slab->next;
       count--;
     }
 
     if (!last && !count) {
       free_list = slab->next;
-      return out_ptr;
+      return (void*)out_ptr;
     } else if (!count) {
-      prev->next = slab->next;
-      return out_ptr;
+      // sprint("prev: ");
+      // iprintln((long)prev, 16);
+      last->next = slab->next;
+      return (void*)out_ptr;
     }
+
     out_ptr = slab->next;
-    last = prev;
+    last = slab;
+    slab = slab->next;
   }
 
   return NULL;
+}
+
+void kfree(void* ptr) {
+  Slab* slab = (Slab*)ptr;
+  slab->next = free_list;
+  free_list = slab;
 }
