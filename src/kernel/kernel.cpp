@@ -51,7 +51,7 @@ extern "C" int _start() {
   void* a = kmalloc(SLAB_SIZE - sizeof(int));
   kmalloc(SLAB_SIZE * 2 - sizeof(int));
   kfree(a);
-  long b = (long)kmalloc(SLAB_SIZE * 2 + (1 - (sizeof(int))));
+  long b = (long)kmalloc(SLAB_SIZE * 2 + 1 - sizeof(int));
   long c = (long)kmalloc(SLAB_SIZE - sizeof(int));
   long d = (long)kmalloc(SLAB_SIZE - sizeof(int) + 0x20);
   char err = 0;
@@ -68,6 +68,14 @@ extern "C" int _start() {
   if (d != HEAP_BASE + SLAB_SIZE * 6 + sizeof(int)) {
     sprint("d: ");
     iprintln(d, 16);
+    err = 1;
+  }
+  kfree((void*)b);
+  long e = (long)kmalloc(SLAB_SIZE * 3 - sizeof(int));
+  if (e != HEAP_BASE + SLAB_SIZE * 3 + sizeof(int)) {
+    sprint("e: ");
+    iprintln(e, 16);
+    iprintln(HEAP_BASE + SLAB_SIZE * 3 + sizeof(int), 16);
     err = 1;
   }
   if (err) {

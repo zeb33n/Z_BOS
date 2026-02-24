@@ -32,13 +32,14 @@ void kheap_init() {
   free_list = prev;
 }
 
-// slab allocator
 // TODO make sure you dont overwrite the stack
+// TODO error handling
+// slab allocator
 void* kmalloc(int size) {
   Slab* prev = free_list;
   Slab* last = (Slab*)NULL;
   Slab* slab = free_list;
-  // extra 4 bytes for int that measures size of pointer
+  // extra bytes for int that measures size of pointer
   int n_contig_slabs = (size + sizeof(int) + SLAB_SIZE - 1) / SLAB_SIZE;
 
   // find n contiguous slabs
@@ -62,7 +63,7 @@ void* kmalloc(int size) {
       last->next = slab->next;
     }
 
-    // special 4 bytes behind pointer contain
+    // special bytes behind pointer contain
     // number of slabs in allocation
     int* count_int = (int*)prev;
     *count_int = n_contig_slabs;
@@ -72,16 +73,21 @@ void* kmalloc(int size) {
   return NULL;
 }
 
+// TODO what if n_slabs is less than 1
 void kfree(void* ptr) {
   int* base = (int*)ptr - 1;
   int n_slabs = *base;
-  Slab* slab = (Slab*)base + n_slabs - 1;
-  Slab* prev = free_list;
-  while (n_slabs > 0) {
-    slab->next = prev;
-    prev = slab;
-    slab -= 1;
+  long slab_addr = (long)base + (n_slabs - 1) * SLAB_SIZE;
+  long prev_addr = (long)free_list;
+  for (;;) {
+    Slab* slab = (Slab*)slab_addr;
+    slab->next = (Slab*)prev_addr;
+    prev_addr = slab_addr;
     n_slabs--;
+    if (n_slabs <= 0) {
+      break;
+    }
+    slab_addr -= SLAB_SIZE;
   }
-  free_list = slab + 1;
+  free_list = (Slab*)slab_addr;
 }
