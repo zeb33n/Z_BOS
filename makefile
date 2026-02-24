@@ -19,6 +19,10 @@ all: prebuild build
 run: prebuild build resize
 	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide,  -m 256M
 
+test: CFLAGS += -DTEST
+test: prebuild build resize
+	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide,  -m 256M
+
 resize:
 	qemu-img resize $(BIN)/OS.bin 1G
 

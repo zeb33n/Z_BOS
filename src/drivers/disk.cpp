@@ -127,6 +127,11 @@ void send_28bit_command(int drive, int lba, char count, short* ptr, char cmd) {
     }
     ptr += 256;
   }
+
+  char status = inb(0x1F7);
+  if (status & 0x01) {
+    iprintln(status, 16);
+  }
 }
 
 void read_28bit(int drive, int lba, char sectorcount, short* ptr) {

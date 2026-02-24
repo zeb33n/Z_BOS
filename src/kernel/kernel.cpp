@@ -8,6 +8,10 @@
 #include "filesystem.h"
 #include "idt.h"
 
+#ifdef TEST
+#include "../test/tests.h"
+#endif
+
 // TODO:
 // 0. memory detection -> use multiboot
 // 1. kmalloc -> needed for page frame allocation -> first free aligned address
@@ -33,56 +37,9 @@ extern "C" int _start() {
 
   sprintln(WELCOMEMSG);
 
-  // TODO tests to their own file
-  // test disk driver
-  sprint("test disk... ");
-  char writestr[256] = "bananas";
-  write_28bit(MASTER, 1, 1, (short*)writestr);
-  char readstr[512];
-  read_28bit(MASTER, 1, 2, (short*)readstr);
-  if (strcmp("bananas", readstr)) {
-    sprintln("[ok]");
-  } else {
-    sprintln("[error]");
-  }
-
-  // test kmalloc
-  sprint("test kmalloc... ");
-  void* a = kmalloc(SLAB_SIZE - sizeof(int));
-  kmalloc(SLAB_SIZE * 2 - sizeof(int));
-  kfree(a);
-  long b = (long)kmalloc(SLAB_SIZE * 2 + 1 - sizeof(int));
-  long c = (long)kmalloc(SLAB_SIZE - sizeof(int));
-  long d = (long)kmalloc(SLAB_SIZE - sizeof(int) + 0x20);
-  char err = 0;
-  if (b != HEAP_BASE + SLAB_SIZE * 3 + sizeof(int)) {
-    sprint("b: ");
-    iprintln(b, 16);
-    err = 1;
-  }
-  if (c != HEAP_BASE + sizeof(int)) {
-    sprint("c: ");
-    iprintln(c, 16);
-    err = 1;
-  }
-  if (d != HEAP_BASE + SLAB_SIZE * 6 + sizeof(int)) {
-    sprint("d: ");
-    iprintln(d, 16);
-    err = 1;
-  }
-  kfree((void*)b);
-  long e = (long)kmalloc(SLAB_SIZE * 3 - sizeof(int));
-  if (e != HEAP_BASE + SLAB_SIZE * 3 + sizeof(int)) {
-    sprint("e: ");
-    iprintln(e, 16);
-    iprintln(HEAP_BASE + SLAB_SIZE * 3 + sizeof(int), 16);
-    err = 1;
-  }
-  if (err) {
-    sprintln("[error]");
-  } else {
-    sprintln("[ok]");
-  }
+#ifdef TEST
+  run_tests();
+#endif
 
   shell_init();
   for (;;) {
