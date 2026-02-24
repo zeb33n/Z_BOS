@@ -1,3 +1,4 @@
+#include "../drivers/printing.h"
 #include "memory.h"
 #include "types.h"
 
@@ -34,47 +35,53 @@ void kheap_init() {
 // slab allocator
 // TODO make sure you dont overwrite the stack
 void* kmalloc(int size) {
-  // easy exit if we need less than one slab of mem
-  Slab* out_ptr = free_list;
-  // if (size <= SLAB_SIZE) {
-  //   free_list = free_list->next;
-  //   return out_ptr;
-  // }
-
-  // find n contiguous slabs
-  int n_contig_slabs = (size + SLAB_SIZE - 1) / SLAB_SIZE;
+  Slab* prev = free_list;
   Slab* last = (Slab*)NULL;
   Slab* slab = free_list;
+  // extra 4 bytes for int that measures size of pointer
+  int n_contig_slabs = (size + sizeof(int) + SLAB_SIZE - 1) / SLAB_SIZE;
 
+  // find n contiguous slabs
   while (slab != NULL) {
     int count = n_contig_slabs - 1;
-    // Slab* prev;
     while ((char*)slab->next - SLAB_SIZE == (char*)slab && count) {
-      // prev = slab;
       slab = slab->next;
       count--;
     }
 
-    if (!last && !count) {
-      free_list = slab->next;
-      return (void*)out_ptr;
-    } else if (!count) {
-      // sprint("prev: ");
-      // iprintln((long)prev, 16);
-      last->next = slab->next;
-      return (void*)out_ptr;
+    if (count) {
+      prev = slab->next;
+      last = slab;
+      slab = slab->next;
+      continue;
     }
 
-    out_ptr = slab->next;
-    last = slab;
-    slab = slab->next;
+    if (!last) {
+      free_list = slab->next;
+    } else {
+      last->next = slab->next;
+    }
+
+    // special 4 bytes behind pointer contain
+    // number of slabs in allocation
+    int* count_int = (int*)prev;
+    *count_int = n_contig_slabs;
+    return (void*)(count_int + 1);
   }
 
   return NULL;
 }
 
 void kfree(void* ptr) {
-  Slab* slab = (Slab*)ptr;
-  slab->next = free_list;
-  free_list = slab;
+  int* base = (int*)ptr - 1;
+  int n_slabs = *base;
+  Slab* slab = (Slab*)base + n_slabs - 1;
+  Slab* prev = free_list;
+  while (n_slabs > 0) {
+    slab->next = prev;
+    prev = slab;
+    slab -= 1;
+    n_slabs--;
+  }
+  free_list = slab + 1;
 }

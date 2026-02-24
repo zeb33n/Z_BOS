@@ -67,6 +67,7 @@ int disk_status_handle(DiskStatus s) {
     case DISK_SUCCESS:
       return 1;
   }
+  return 0;
 }
 
 void disk_drive_init(int drive) {

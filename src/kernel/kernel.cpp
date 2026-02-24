@@ -33,8 +33,8 @@ extern "C" int _start() {
 
   sprintln(WELCOMEMSG);
 
-  // test disk driver
   // TODO tests to their own file
+  // test disk driver
   sprint("test disk... ");
   char writestr[256] = "bananas";
   write_28bit(MASTER, 1, 1, (short*)writestr);
@@ -46,19 +46,34 @@ extern "C" int _start() {
     sprintln("[error]");
   }
 
-  // Need to debug why this doesnt work
+  // test kmalloc
   sprint("test kmalloc... ");
-  void* a = kmalloc(0x40);
-  kmalloc(0x40);
+  void* a = kmalloc(SLAB_SIZE - sizeof(int));
+  kmalloc(SLAB_SIZE * 2 - sizeof(int));
   kfree(a);
-  long b = (long)kmalloc(0x81);
-  long c = (long)kmalloc(64);
-  long d = (long)kmalloc(0x70);
-  if (b == HEAP_BASE + SLAB_SIZE * 2 && c == HEAP_BASE &&
-      d == HEAP_BASE + SLAB_SIZE * 5) {
-    sprintln("[ok]");
-  } else {
+  long b = (long)kmalloc(SLAB_SIZE * 2 + (1 - (sizeof(int))));
+  long c = (long)kmalloc(SLAB_SIZE - sizeof(int));
+  long d = (long)kmalloc(SLAB_SIZE - sizeof(int) + 0x20);
+  char err = 0;
+  if (b != HEAP_BASE + SLAB_SIZE * 3 + sizeof(int)) {
+    sprint("b: ");
+    iprintln(b, 16);
+    err = 1;
+  }
+  if (c != HEAP_BASE + sizeof(int)) {
+    sprint("c: ");
+    iprintln(c, 16);
+    err = 1;
+  }
+  if (d != HEAP_BASE + SLAB_SIZE * 6 + sizeof(int)) {
+    sprint("d: ");
+    iprintln(d, 16);
+    err = 1;
+  }
+  if (err) {
     sprintln("[error]");
+  } else {
+    sprintln("[ok]");
   }
 
   shell_init();
