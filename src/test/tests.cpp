@@ -11,9 +11,9 @@ void test_disk_driver() {
   char err = 0;
 
   char writestr[256] = "bananas";
-  write_28bit(MASTER, 2, 1, (short*)writestr);
+  write_28bit(MASTER, 1, 1, (short*)writestr);
   char readstr[512];
-  read_28bit(MASTER, 2, 1, (short*)readstr);
+  read_28bit(MASTER, 1, 1, (short*)readstr);
   if (!strcmp("bananas", readstr)) {
     sprintln("1");
     err = 1;
@@ -25,8 +25,10 @@ void test_disk_driver() {
   write_28bit(MASTER, 4, 2, (short*)writestr512);
   char readstr512[512];
   read_28bit(MASTER, 4, 2, (short*)readstr512);
-  if (!strcmp(writestr512, readstr512)) {
-    sprintln("2");
+  char target[512];
+  memset(target, 'a', 511);
+  target[511] = '\0';
+  if (!strcmp(target, readstr512)) {
     err = 1;
   }
 
