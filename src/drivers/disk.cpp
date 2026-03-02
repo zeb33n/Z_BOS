@@ -78,15 +78,8 @@ void disk_drive_init(int drive) {
   disk_info.sectors48 = *(long long*)(data_buffer + 100);
 }
 
-void read_io_port(short* ptr) {
-  *ptr = inw(0x1F0);
-}
-
-void write_io_port(short* ptr) {
-  outw(0x1F0, *ptr);
-}
-
 void send_28bit_command(int drive, int lba, char count, short* ptr, char cmd) {
+  lba &= 0x0FFFFFFF;
   if (!disk_status_handle(identify(drive))) {
     return;
   }
@@ -103,18 +96,6 @@ void send_28bit_command(int drive, int lba, char count, short* ptr, char cmd) {
   outb(0x1F7, cmd);
   delay_400ns();
 
-  void (*io_func)(short*);
-  switch (cmd) {
-    case WRITE:
-      io_func = &write_io_port;
-      break;
-    case READ:
-      io_func = &read_io_port;
-      break;
-    default:
-      disk_status_handle(DISK_ERR_UNRECOGNISED_CMD);
-  }
-
   for (int i = 0; i < count; i++) {
     // Wait until not busy
     while (inb(0x1F7) & 0x80) {
@@ -123,7 +104,14 @@ void send_28bit_command(int drive, int lba, char count, short* ptr, char cmd) {
     while (!(inb(0x1F7) & 0x40)) {
     }
     for (int j = 0; j < 256; j++) {
-      io_func(&(ptr[j]));
+      if (cmd == READ) {
+        ptr[j] = inw(0x1F0);
+      } else if (cmd == WRITE) {
+        outw(0x1F0, ptr[j]);
+      } else {
+        disk_status_handle(DISK_ERR_UNRECOGNISED_CMD);
+        return;
+      }
     }
     ptr += 256;
   }

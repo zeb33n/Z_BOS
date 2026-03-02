@@ -1,4 +1,3 @@
-// #include "../drivers/printing.h"
 #include "memory.h"
 #include "types.h"
 
@@ -90,4 +89,13 @@ void kfree(void* ptr) {
     slab_addr -= SLAB_SIZE;
   }
   free_list = (Slab*)slab_addr;
+}
+
+void* krealloc(void* ptr, int size) {
+  void* new_ptr = kmalloc(size);
+  int n_slabs = *((int*)ptr - 1);
+  int count = SLAB_SIZE * n_slabs;
+  memcopy(new_ptr, ptr, count);
+  kfree(ptr);
+  return new_ptr;
 }

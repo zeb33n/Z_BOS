@@ -83,8 +83,8 @@ void test_memory() {
 }
 
 void run_tests() {
-  test_memory();
   test_disk_driver();
+  test_memory();
 }
 
 #endif

@@ -68,7 +68,7 @@ errorMem:
 
                                     
 BOOT_DISK: db 0
-BOOT_SECTORS equ 32
+BOOT_SECTORS equ 40
 
 GDT_start:
     GDT_null:

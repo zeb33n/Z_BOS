@@ -41,6 +41,8 @@ extern "C" int _start() {
   run_tests();
 #endif
 
+  init_file_system();
+
   shell_init();
   for (;;) {
   }

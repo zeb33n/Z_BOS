@@ -1,3 +1,8 @@
+#define CONTINUE 0xAA
+#define STOP 0xAC
+
+typedef enum { FS_ERR_CORRUPT_DISK, FS_SUCCESS } FileSystemStatus;
+
 typedef struct fte FileTableEntry;
 
 typedef enum {
@@ -19,7 +24,7 @@ typedef struct {
 } Folder;
 
 typedef struct fte {
-  char next;
+  unsigned char next;
   FileTableEntryKind kind;
   union {
     Folder folder;
@@ -29,7 +34,8 @@ typedef struct fte {
 
 typedef struct {
   int count;
+  int capacity;
   FileTableEntry* entrys;
 } FileTable;
 
-void write_file_table();
+void init_file_system();
