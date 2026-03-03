@@ -33,6 +33,17 @@ int strlen(const char* str) {
   return i - 1;
 }
 
+StrStatus strcpy(const char* from, char* to, int size) {
+  int len = strlen(from);
+  if (size > len) {
+    return STR_ERR;
+  }
+  for (int i = 0; i < 1 + size; i++) {
+    to[i] = from[i];
+  }
+  return STR_SUC;
+}
+
 StrStatus str2uint(int* out, const char* str, int base) {
   *out = 0;
   int j = 0;

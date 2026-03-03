@@ -1,7 +1,12 @@
 #define CONTINUE 0xAA
 #define STOP 0xAC
 
-typedef enum { FS_ERR_CORRUPT_DISK, FS_SUCCESS } FileSystemStatus;
+typedef enum {
+  FS_ERR_CORRUPT_DISK,
+  FS_ERR_NAME_LENGTH,
+  FS_ERR_FOLDER_CAP,
+  FS_SUCCESS
+} FileSystemStatus;
 
 typedef struct fte FileTableEntry;
 
