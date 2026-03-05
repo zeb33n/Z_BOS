@@ -24,7 +24,7 @@
 #define dyn_init(arr)                                         \
   do {                                                        \
     arr.count = 0;                                            \
-    arr.capacity = 10;                                        \
+    arr.capacity = 64;                                        \
     arr.values = kmalloc(sizeof(*arr.values) * arr.capacity); \
   } while (0)
 
