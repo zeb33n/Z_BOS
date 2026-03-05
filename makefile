@@ -8,8 +8,8 @@ SRC = src
 
 BIN= ./bins
 
-_CSRCS := $(shell find ./ -name "*.cpp")
-CSRCS = $(patsubst %.cpp,%,$(_CSRCS))
+_CSRCS := $(shell find ./ -name "*.c")
+CSRCS = $(patsubst %.c,%,$(_CSRCS))
 
 ASMBINS := src/bootloader/boot src/bootloader/zeroes
 ASMELFS := src/kernel/idtasm src/bootloader/kernel_entry
@@ -48,7 +48,7 @@ $(ASMBINS): %: %.asm
 
 c: $(CSRCS) 
 
-$(CSRCS): % : %.cpp
+$(CSRCS): % : %.c
 	mkdir -p $(BIN)/$(shell dirname $(subst $(SRC)/,,$@))
 	$(CC) $(CFLAGS) $< -o $(subst $(SRC),$(BIN),$@.o)
 

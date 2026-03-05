@@ -1,3 +1,6 @@
+#ifndef MEMORY
+#define MEMORY
+
 #define HEAP_BASE 0x10000
 #define HEAP_END 0x20040
 #define SLAB_SIZE 64
@@ -14,3 +17,5 @@ void* kmalloc(int size);
 void* krealloc(void* ptr, int size);
 void kfree(void* ptr);
 void kheap_init();
+
+#endif

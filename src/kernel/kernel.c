@@ -2,6 +2,7 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/printing.h"
 #include "../shell/shell.h"
+#include "../utils/data_structures.h"
 #include "../utils/memory.h"
 #include "../utils/strings.h"
 #include "../utils/timer.h"
@@ -22,7 +23,7 @@
 //   - uses the ps register
 // 3. processes for malloc https://wiki.osdev.org/Writing_a_memory_manager
 
-extern "C" int _start() {
+extern int _start() {
   init_pit(1931);  // one tick every ms
   idt_install();
   isr_install();
@@ -40,6 +41,11 @@ extern "C" int _start() {
 #ifdef TEST
   run_tests();
 #endif
+
+  DynStr s;
+  void* a;
+  s.values = a;
+  dyn_init(s);
 
   init_file_system();
 

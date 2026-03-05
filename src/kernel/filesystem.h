@@ -1,5 +1,4 @@
-#define CONTINUE 0xAA
-#define STOP 0xAC
+#include "../utils/strings.h"
 
 typedef enum {
   FS_ERR_CORRUPT_DISK,
@@ -8,39 +7,31 @@ typedef enum {
   FS_SUCCESS
 } FileSystemStatus;
 
-typedef struct fte FileTableEntry;
-
-typedef enum {
-  FILE,
-  FOLDER,
-} FileTableEntryKind;
-
 typedef struct {
   int start_sector;
   int start_byte;
   int size;
-  char name[10];
+  DynStr name;
 } File;
-
-typedef struct {
-  int numfiles;
-  char name[10];
-  FileTableEntry* entrys[10];
-} Folder;
-
-typedef struct fte {
-  unsigned char next;
-  FileTableEntryKind kind;
-  union {
-    Folder folder;
-    File file;
-  } data;
-} FileTableEntry;
 
 typedef struct {
   int count;
   int capacity;
-  FileTableEntry* entrys;
-} FileTable;
+  File* values;
+} DynFileArr;
+
+typedef struct Folder Folder;
+
+typedef struct {
+  int count;
+  int capacity;
+  Folder* values;
+} DynFolderArr;
+
+typedef struct Folder {
+  DynStr name;
+  DynFolderArr folders;
+  DynFileArr files;
+} Folder;
 
 void init_file_system();

@@ -44,7 +44,8 @@ void scroll_without_render() {
 
 // this my cursor we should move the vga cursor aswell
 void vga_init() {
-  CURSOR = {0, 0};
+  CURSOR.x = 0;
+  CURSOR.y = 0;
 
   // init screen with nulls
   for (int i = 0; i < 25; i++) {

@@ -1,20 +1,19 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/printing.h"
-#include "../utils/memory.h"
 #include "../utils/portio.h"
 #include "../utils/timer.h"
 
-extern "C" void _idt_load();
+extern void _idt_load();
 
-extern "C" void _isr_generic();
+extern void _isr_generic();
 
-extern "C" void _irq_keyboard();
+extern void _irq_keyboard();
 
-extern "C" void _irq_timer();
+extern void _irq_timer();
 
-extern "C" void _irq_under_40();
+extern void _irq_under_40();
 
-extern "C" void _irq_over_39();
+extern void _irq_over_39();
 
 struct idt_entry {
   unsigned short base_lo;
@@ -53,7 +52,7 @@ void idt_install() {
   _idt_load();
 }
 
-extern "C" void _fault_handler() {
+extern void _fault_handler() {
   sprintln("Exception!");
   outb(0x20, 0x20);
 }
@@ -81,27 +80,27 @@ void irq_remap() {
   outb(0xA1, 0x0);
 }
 
-extern "C" void _more_than_39() {
+extern void _more_than_39() {
   // sprintln("more");
   outb(0xA0, 0x20);  // EOI to pic2
   outb(0x20, 0x20);  // EOI to pic1
 }
 
-extern "C" void _less_than_40() {
+extern void _less_than_40() {
   // sprintln("less");
   outb(0x20, 0x20);
 }
 
 // not working try timer one instead
 
-extern "C" void _keyboard_handler() {
+extern void _keyboard_handler() {
   keyboard_handle();
   // sprintln("finished");
   outb(0x20, 0x20);
   // sprintln("double finished");
 }
 
-extern "C" void _timer_handler() {
+extern void _timer_handler() {
   timer_handle();
   outb(0x20, 0x20);
 }
