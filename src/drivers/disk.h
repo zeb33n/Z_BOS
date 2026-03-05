@@ -1,3 +1,6 @@
+#ifndef DISK
+#define DISK
+
 #define MASTER 0xA0
 #define SLAVE 0xB0
 
@@ -20,3 +23,7 @@ typedef struct {
 void disk_drive_init(int drive);
 void read_28bit(int drive, int lba, char sectorcount, short* ptr);
 void write_28bit(int drive, int lba, char sectorcount, short* ptr);
+
+static DiskInfo disk_info;
+
+#endif

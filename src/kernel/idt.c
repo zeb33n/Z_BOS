@@ -1,5 +1,6 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/printing.h"
+#include "../utils/memory.h"
 #include "../utils/portio.h"
 #include "../utils/timer.h"
 
