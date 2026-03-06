@@ -119,8 +119,37 @@ void file_create(File* f, const char* name, int size, int lba) {
   f->lba = lba;
   dyn_init(f->name);
   for (int i = 0; i <= strlen(name); i++) {
-    dyn_append(f->name, i);
+    dyn_append(f->name, name[i]);
   }
+}
+
+void file_to_disk(File f) {
+  FileUnion f_union;
+  f_union.file = f;
+  write_28bit(MASTER, f.lba, 1, f_union.arr);
+
+  int lba_name = f.lba + 1;
+  int name_sectors = (f.name.count + 511) / 512;
+
+  if (name_sectors) {
+    char name_buff[name_sectors * 512];
+    memcopy(name_buff, f.name.values, f.name.count);
+    write_28bit(MASTER, lba_name, name_sectors, (short*)name_buff);
+  }
+}
+
+FileSystemStatus file_from_disk(File* f, int lba) {
+  FileUnion f_union;
+  read_28bit(MASTER, lba, 1, f_union.arr);
+  int name_sectors = (f_union.file.name.count + 511) / 512;
+
+  char name_buff[name_sectors * 512];
+  if (!f_union.file.name.count) {
+    return FS_ERR_NO_NAME;
+  }
+  read_28bit(MASTER, lba + 1, name_sectors, (short*)name_buff);
+  file_create(f, name_buff, f_union.file.content_size, f_union.file.lba);
+  return FS_SUCCESS;
 }
 
 void create_file_system() {
@@ -129,24 +158,20 @@ void create_file_system() {
   FDR.next = NULL;
   Folder root;
   folder_create(&root, "root", FDR.lba, 0);
-  dyn_append(root.folders, 420);
-  dyn_append(root.folders, 69);
-  dyn_append(root.files, 42069);
   report_status(folder_to_disk(root));
 }
 
 void boot_file_system() {}
 
 void init_file_system() {
-  create_file_system();
-  // iprintln(FDR.lba, 10);
-  Folder f;
-  folder_from_disk(1, &f);
+  File f;
+  file_create(&f, "zebs_file", 10, 3);
   sprintln(f.name.values);
-  iprintln(f.folders.values[0], 10);
-  iprintln(f.folders.values[1], 10);
-  iprintln(f.files.values[0], 10);
-  iprintln(f.lba, 10);
-  iprintln(f.parent_lba, 10);
-  iprintln(FDR.lba, 10);
+  file_to_disk(f);
+  File g;
+  file_create(&g, "", 0, 0);
+  file_from_disk(&g, 3);
+  iprintln(g.content_size, 10);
+  iprintln(g.lba, 10);
+  sprintln(g.name.values);
 }

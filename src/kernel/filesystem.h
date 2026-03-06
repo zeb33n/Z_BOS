@@ -23,11 +23,10 @@ typedef struct {
   DynStr name;
 } File;
 
-typedef struct {
-  int lba;
-  int content_size;
-  int name_size;
-} FileDiskRep;
+typedef union {
+  short arr[256];
+  File file;
+} FileUnion;
 
 typedef struct {
   int count;
@@ -35,6 +34,7 @@ typedef struct {
   int* values;
 } DynIntArr;
 
+// can probably get rid of this and just write to disk as a union
 typedef struct {
   int lba;
   int parent_lba;
