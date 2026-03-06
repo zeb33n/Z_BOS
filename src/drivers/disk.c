@@ -4,6 +4,8 @@
 
 static short data_buffer[256];
 
+DiskInfo disk_info;
+
 static inline void delay_400ns() {
   inb(0x3F6);
   inb(0x3F6);

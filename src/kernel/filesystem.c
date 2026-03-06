@@ -13,10 +13,12 @@ void report_status(FileSystemStatus status) {
   switch (status) {
     case FS_ERR_CORRUPT_DISK:
       return sprintln("corrupt disk");
-    case FS_SUCCESS:
-      return sprintln("ok");
     case FS_ERR_DISK_FULL:
       return sprintln("Disk is full");
+    case FS_ERR_NO_NAME:
+      return sprintln("corrupt disk");
+    case FS_SUCCESS:
+      return;
   }
 }
 
@@ -27,7 +29,7 @@ void folder_create(Folder* f, const char* name, int lba, int parent_lba) {
   dyn_init(f->files);
   dyn_init(f->name);
   for (int i = 0; i <= strlen(name); i++) {
-    dyn_append(f->name, i);
+    dyn_append(f->name, name[i]);
   }
 }
 
@@ -43,20 +45,37 @@ FileSystemStatus folder_to_disk(Folder f) {
     return FS_ERR_DISK_FULL;
   }
 
-  write_28bit(MASTER, lba_info, 1, (short*)&f);
-  write_28bit(MASTER, lba_folders, folder_sectors, (short*)&f.folders.values);
-  write_28bit(MASTER, lba_files, file_sectors, (short*)&f.files.values);
-  write_28bit(MASTER, lba_name, name_sectors, (short*)&f.name.values);
+  FolderDiskRep f_diskrep = {f.lba, f.parent_lba, name_sectors, folder_sectors,
+                             file_sectors};
+  FolderDiskRepUnion f_union;
+  f_union.folder_disk_rep = f_diskrep;
+  write_28bit(MASTER, lba_info, 1, f_union.arr);
+
+  if (folder_sectors) {
+    int folders_buff[(folder_sectors * 512) / sizeof(int)];
+    memcopy(folders_buff, f.folders.values, f.folders.count * sizeof(int));
+    write_28bit(MASTER, lba_folders, folder_sectors, (short*)folders_buff);
+  }
+
+  if (file_sectors) {
+    int files_buff[(file_sectors * 512) / sizeof(int)];
+    memcopy(files_buff, f.files.values, f.files.count * sizeof(int));
+    write_28bit(MASTER, lba_files, file_sectors, (short*)files_buff);
+  }
+
+  if (name_sectors) {
+    char name_buff[name_sectors * 512];
+    memcopy(name_buff, f.name.values, f.name.count);
+    write_28bit(MASTER, lba_name, name_sectors, (short*)name_buff);
+  }
+
+  FDR.lba = lba_name + name_sectors;
 
   return FS_SUCCESS;
 }
 
 FileSystemStatus folder_from_disk(int lba, Folder* f) {
-  union FUnion {
-    short arr[256];
-    FolderDiskRep folder_disk_rep;
-  };
-  union FUnion f_union;
+  FolderDiskRepUnion f_union;
   read_28bit(MASTER, lba, 1, f_union.arr);
 
   FolderDiskRep f_diskrep = f_union.folder_disk_rep;
@@ -68,18 +87,31 @@ FileSystemStatus folder_from_disk(int lba, Folder* f) {
   int lba_name = lba_files + file_sectors;
   int name_sectors = (f_diskrep.name_size + 511) / 512;
 
-  int folders_buff[f_diskrep.folders_size];
-  int files_buff[f_diskrep.files_size];
-  int name_buff[f_diskrep.name_size];
-  read_28bit(MASTER, lba_folders, folder_sectors, (short*)folders_buff);
-  read_28bit(MASTER, lba_files, file_sectors, (short*)files_buff);
-  read_28bit(MASTER, lba_name, name_sectors, (short*)name_buff);
-
-  DynIntArr folders;
-  dyn_init(folders);
-  for (int i = 0; i < f_diskrep.folders_size; i++) {
-    dyn_append(folders, folders_buff[i]);
+  char name_buff[name_sectors * 512];
+  if (name_sectors) {
+    read_28bit(MASTER, lba_name, name_sectors, (short*)name_buff);
+    folder_create(f, name_buff, f_diskrep.lba, f_diskrep.parent_lba);
+  } else {
+    return FS_ERR_NO_NAME;
   }
+
+  int folders_buff[(folder_sectors * 512) / sizeof(int)];
+  if (folder_sectors) {
+    read_28bit(MASTER, lba_folders, folder_sectors, (short*)folders_buff);
+    for (int i = 0; i < f_diskrep.folders_size; i++) {
+      dyn_append(f->folders, folders_buff[i]);
+    }
+  }
+
+  int files_buff[(file_sectors * 512) / sizeof(int)];
+  if (file_sectors) {
+    read_28bit(MASTER, lba_files, file_sectors, (short*)files_buff);
+    for (int i = 0; i < f_diskrep.files_size; i++) {
+      dyn_append(f->files, files_buff[i]);
+    }
+  }
+
+  return FS_SUCCESS;
 }
 
 void file_create(File* f, const char* name, int size, int lba) {
@@ -97,9 +129,24 @@ void create_file_system() {
   FDR.next = NULL;
   Folder root;
   folder_create(&root, "root", FDR.lba, 0);
-  folder_to_disk(root);
+  dyn_append(root.folders, 420);
+  dyn_append(root.folders, 69);
+  dyn_append(root.files, 42069);
+  report_status(folder_to_disk(root));
 }
 
 void boot_file_system() {}
 
-void init_file_system() {}
+void init_file_system() {
+  create_file_system();
+  // iprintln(FDR.lba, 10);
+  Folder f;
+  folder_from_disk(1, &f);
+  sprintln(f.name.values);
+  iprintln(f.folders.values[0], 10);
+  iprintln(f.folders.values[1], 10);
+  iprintln(f.files.values[0], 10);
+  iprintln(f.lba, 10);
+  iprintln(f.parent_lba, 10);
+  // iprintln(FDR.lba, 10);
+}

@@ -3,7 +3,9 @@
 typedef enum {
   FS_ERR_CORRUPT_DISK,
   FS_ERR_DISK_FULL,
+  FS_ERR_NO_NAME,
   FS_SUCCESS
+
 } FileSystemStatus;
 
 typedef struct Folder Folder;
@@ -48,5 +50,10 @@ typedef struct Folder {
   int lba;
   int parent_lba;
 } Folder;
+
+typedef union {
+  short arr[256];
+  FolderDiskRep folder_disk_rep;
+} FolderDiskRepUnion;
 
 void init_file_system();

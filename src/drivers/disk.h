@@ -24,6 +24,6 @@ void disk_drive_init(int drive);
 void read_28bit(int drive, int lba, char sectorcount, short* ptr);
 void write_28bit(int drive, int lba, char sectorcount, short* ptr);
 
-static DiskInfo disk_info;
+extern DiskInfo disk_info;
 
 #endif
