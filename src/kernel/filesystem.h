@@ -53,7 +53,7 @@ typedef struct Folder {
 
 typedef union {
   short arr[256];
-  FolderDiskRep folder_disk_rep;
+  FolderDiskRep rep;
 } FolderDiskRepUnion;
 
 void init_file_system();

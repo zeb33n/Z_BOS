@@ -45,10 +45,10 @@ FileSystemStatus folder_to_disk(Folder f) {
     return FS_ERR_DISK_FULL;
   }
 
-  FolderDiskRep f_diskrep = {f.lba, f.parent_lba, name_sectors, folder_sectors,
-                             file_sectors};
+  FolderDiskRep f_diskrep = {f.lba, f.parent_lba, f.name.count, f.folders.count,
+                             f.files.count};
   FolderDiskRepUnion f_union;
-  f_union.folder_disk_rep = f_diskrep;
+  f_union.rep = f_diskrep;
   write_28bit(MASTER, lba_info, 1, f_union.arr);
 
   if (folder_sectors) {
@@ -78,19 +78,19 @@ FileSystemStatus folder_from_disk(int lba, Folder* f) {
   FolderDiskRepUnion f_union;
   read_28bit(MASTER, lba, 1, f_union.arr);
 
-  FolderDiskRep f_diskrep = f_union.folder_disk_rep;
+  FolderDiskRep f_diskrep = f_union.rep;
 
-  int lba_folders = f_diskrep.lba + 1;
-  int folder_sectors = (sizeof(int) * f_diskrep.folders_size + 511) / 512;
+  int lba_folders = f_union.rep.lba + 1;
+  int folder_sectors = (sizeof(int) * f_union.rep.folders_size + 511) / 512;
   int lba_files = lba_folders + folder_sectors;
-  int file_sectors = (sizeof(int) * f_diskrep.files_size + 511) / 512;
+  int file_sectors = (sizeof(int) * f_union.rep.files_size + 511) / 512;
   int lba_name = lba_files + file_sectors;
-  int name_sectors = (f_diskrep.name_size + 511) / 512;
+  int name_sectors = (f_union.rep.name_size + 511) / 512;
 
   char name_buff[name_sectors * 512];
   if (name_sectors) {
     read_28bit(MASTER, lba_name, name_sectors, (short*)name_buff);
-    folder_create(f, name_buff, f_diskrep.lba, f_diskrep.parent_lba);
+    folder_create(f, name_buff, f_union.rep.lba, f_union.rep.parent_lba);
   } else {
     return FS_ERR_NO_NAME;
   }
@@ -98,7 +98,7 @@ FileSystemStatus folder_from_disk(int lba, Folder* f) {
   int folders_buff[(folder_sectors * 512) / sizeof(int)];
   if (folder_sectors) {
     read_28bit(MASTER, lba_folders, folder_sectors, (short*)folders_buff);
-    for (int i = 0; i < f_diskrep.folders_size; i++) {
+    for (int i = 0; i < f_union.rep.folders_size; i++) {
       dyn_append(f->folders, folders_buff[i]);
     }
   }
@@ -106,7 +106,7 @@ FileSystemStatus folder_from_disk(int lba, Folder* f) {
   int files_buff[(file_sectors * 512) / sizeof(int)];
   if (file_sectors) {
     read_28bit(MASTER, lba_files, file_sectors, (short*)files_buff);
-    for (int i = 0; i < f_diskrep.files_size; i++) {
+    for (int i = 0; i < f_union.rep.files_size; i++) {
       dyn_append(f->files, files_buff[i]);
     }
   }
@@ -148,5 +148,5 @@ void init_file_system() {
   iprintln(f.files.values[0], 10);
   iprintln(f.lba, 10);
   iprintln(f.parent_lba, 10);
-  // iprintln(FDR.lba, 10);
+  iprintln(FDR.lba, 10);
 }
