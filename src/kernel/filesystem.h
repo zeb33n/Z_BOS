@@ -34,26 +34,16 @@ typedef struct {
   int* values;
 } DynIntArr;
 
-// can probably get rid of this and just write to disk as a union
-typedef struct {
-  int lba;
-  int parent_lba;
-  int name_size;
-  int folders_size;
-  int files_size;
-} FolderDiskRep;
-
 typedef struct Folder {
   DynStr name;
   DynIntArr folders;
   DynIntArr files;
-  int lba;
   int parent_lba;
 } Folder;
 
 typedef union {
   short arr[256];
-  FolderDiskRep rep;
-} FolderDiskRepUnion;
+  Folder folder;
+} FolderUnion;
 
 void init_file_system();
