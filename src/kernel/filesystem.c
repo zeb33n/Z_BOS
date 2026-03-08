@@ -69,6 +69,9 @@ int claim_disk_reigon(int n_sectors) {
 }
 
 void return_disk_reigon(int lba, int n_sectors) {
+  if (lba <= 0) {
+    return;
+  }
   FreeDiskReigon fdr_old;
   fdr_read(FDR, &fdr_old);
   FreeDiskReigon fdr = {lba, lba + 1, n_sectors, fdr_old.lba};
@@ -262,18 +265,33 @@ FileSystemStatus fs_create_file(const char* name) {
   return FS_SUCCESS;
 }
 
-// FileSystemStatus fs_create_folder(const char* name) {
-//   Folder f;
-//   int lba = FDR.lba;
-//   folder_init_alloc(&f, name, current_folder);
-//   int lba_next = folder_to_disk(f);
-//   if (lba_next < 0) {
-//     return FS_ERR_DISK_FULL;
-//   }
-//   FDR.lba = lba_next;
-//   folder_free(f);
-//   return FS_SUCCESS;
-// }
+FileSystemStatus fs_file_write_content(int lba_file,
+                                       int content_size,
+                                       const char* content) {
+  File f;
+  unwrap_file_status(file_from_disk_alloc(lba_file, &f));
+
+  return_disk_reigon(f.lba, (f.content_size + 511) / 512);
+  int content_sectors = (content_size + 511) / 512;
+  int lba_content = claim_disk_reigon(content_sectors);
+
+  unwrap_int(lba_content, FS_ERR_DISK_FULL);
+  f.lba = lba_content;
+  f.content_size = content_size;
+  file_to_disk(lba_file, f);
+  write_28bit(MASTER, lba_content, content_sectors, (short*)content);
+  file_free(f);
+
+  return FS_SUCCESS;
+}
+
+FileSystemStatus fs_file_read_content(int lba_file, char* buff) {
+  File f;
+  unwrap_file_status(file_from_disk_alloc(lba_file, &f));
+  read_28bit(MASTER, f.lba, (f.content_size + 511) / 512, (short*)buff);
+  file_free(f);
+  return FS_SUCCESS;
+}
 
 FileSystemStatus create_file_system() {
   FreeDiskReigon fdr;
@@ -298,17 +316,21 @@ void boot_file_system() {
 void init_file_system() {
   create_file_system();
   boot_file_system();
-  iprintln(current_folder, 10);
   sprintln("creating file");
-  // fs_create_file("zeb");
+  fs_create_file("lauren");
   // when creating 62 or more files we get a disk error
   // DISK is not atta ?
-  for (unsigned char c = 0; c < 62; c++) {
-    char buff[] = {c, '\0'};
-    fs_create_file(buff);
-  }
+  // for (unsigned char c = 0; c < 62; c++) {
+  //   char buff[] = {c, '\0'};
+  //   fs_create_file(buff);
+  // }
   fs_list(current_folder);
-  iprintln(current_folder, 10);
+  Folder f;
+  folder_from_disk_alloc(current_folder, &f);
+  report_status(fs_file_write_content(f.files.values[0], 9, "pierogi"));
+  char buff[512];
+  report_status(fs_file_read_content(f.files.values[0], buff));
+  sprintln(buff);
   //   // File f;
   // file_create(&f, "zebs_file", 10, 3);
   // sprintln(f.name.values);
