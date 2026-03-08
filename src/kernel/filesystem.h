@@ -1,10 +1,10 @@
 #include "../utils/strings.h"
 
 typedef enum {
+  FS_SUCCESS,
   FS_ERR_CORRUPT_DISK,
   FS_ERR_DISK_FULL,
   FS_ERR_NO_NAME,
-  FS_SUCCESS
 
 } FileSystemStatus;
 
