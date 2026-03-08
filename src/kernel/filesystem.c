@@ -1,3 +1,6 @@
+// TODO re-write this a more decentralised slabby way
+// with less gaps on disk
+
 #include "../drivers/disk.h"
 #include "../drivers/printing.h"
 #include "../utils/data_structures.h"
@@ -5,8 +8,7 @@
 #include "../utils/types.h"
 #include "filesystem.h"
 
-// TODO need to be able to write and read FDR's from disk
-FreeDiskReigon FDR;
+int FDR;
 
 int current_folder;
 
@@ -24,7 +26,6 @@ void report_status(FileSystemStatus status) {
 }
 
 #define unwrap_file_status(FS) \
-  FS;                          \
   do {                         \
     if (FS_SUCCESS != FS) {    \
       return FS;               \
@@ -32,24 +33,47 @@ void report_status(FileSystemStatus status) {
   } while (0)
 
 #define unwrap_int(i, FS) \
-  i;                      \
   do {                    \
     if (i < 0) {          \
       return FS;          \
     }                     \
   } while (0)
 
-// TODO implement these 2 functions properly
-int claim_disk_reigon(int n_sectors) {
-  int out = FDR.lba;
-  FDR.lba += n_sectors;
-  if (FDR.lba > disk_info.sectors28) {
-    return -1;
-  }
-  return out;
+void fdr_write(int lba, FreeDiskReigon fdr) {
+  FreeDiskReigonUnion fdr_union;
+  fdr_union.fdr = fdr;
+  write_28bit(MASTER, lba, 1, fdr_union.arr);
 }
 
-void return_disk_reigon(int lba, int n_sectors) {}
+void fdr_read(int lba, FreeDiskReigon* fdr) {
+  FreeDiskReigonUnion fdr_union;
+  read_28bit(MASTER, lba, 1, fdr_union.arr);
+  *fdr = fdr_union.fdr;
+}
+
+int claim_disk_reigon(int n_sectors) {
+  FreeDiskReigon fdr;
+  fdr_read(FDR, &fdr);
+  for (;;) {
+    if (n_sectors <= fdr.n_sectors - fdr.lba_ptr) {
+      int out = fdr.lba_ptr;
+      fdr.lba_ptr += n_sectors;
+      fdr_write(fdr.lba, fdr);
+      return out;
+    }
+    if (fdr.next == 0) {
+      return -1;
+    }
+    fdr_read(fdr.next, &fdr);
+  }
+}
+
+void return_disk_reigon(int lba, int n_sectors) {
+  FreeDiskReigon fdr_old;
+  fdr_read(FDR, &fdr_old);
+  FreeDiskReigon fdr = {lba, lba + 1, n_sectors, fdr_old.lba};
+  FDR = fdr.lba;
+}
 
 void folder_init_alloc(Folder* f, const char* name, int parent_lba) {
   f->parent_lba = parent_lba;
@@ -108,7 +132,6 @@ void folder_to_disk(int lba, Folder f) {
 
 FileSystemStatus folder_from_disk_alloc(int lba, Folder* f) {
   FolderUnion f_union;
-  iprintln(lba, 10);
   read_28bit(MASTER, lba, 1, f_union.arr);
 
   int lba_folders = lba + 1;
@@ -219,8 +242,8 @@ FileSystemStatus fs_create_file(const char* name) {
   file_init_alloc(&file, name, 0, 0);
   unwrap_file_status(folder_from_disk_alloc(current_folder, &folder));
 
-  int file_lba =
-      unwrap_int(claim_disk_reigon(file_n_sectors(file)), FS_ERR_DISK_FULL);
+  int file_lba = claim_disk_reigon(file_n_sectors(file));
+  unwrap_int(claim_disk_reigon(file_n_sectors(file)), FS_ERR_DISK_FULL);
   file_to_disk(file_lba, file);
   file_free(file);
 
@@ -229,8 +252,9 @@ FileSystemStatus fs_create_file(const char* name) {
   int folder_sectors_after = folder_n_sectors(folder);
   if (folder_sectors_before < folder_sectors_after) {
     return_disk_reigon(current_folder, folder_sectors_before);
-    current_folder =
-        unwrap_int(claim_disk_reigon(folder_sectors_after), FS_ERR_DISK_FULL);
+    int folder_lba = claim_disk_reigon(folder_sectors_after);
+    unwrap_int(folder_lba, FS_ERR_DISK_FULL);
+    current_folder = folder_lba;
   }
   folder_to_disk(current_folder, folder);
   folder_free(folder);
@@ -252,13 +276,17 @@ FileSystemStatus fs_create_file(const char* name) {
 // }
 
 FileSystemStatus create_file_system() {
-  FDR.lba = 1;
-  FDR.n_sectors = disk_info.sectors28;
-  FDR.next = NULL;
+  FreeDiskReigon fdr;
+  fdr.lba = 1;
+  fdr.lba_ptr = 2;
+  fdr.n_sectors = disk_info.sectors28;
+  fdr.next = 0;
+  fdr_write(fdr.lba, fdr);
+  FDR = fdr.lba;
   Folder root;
   folder_init_alloc(&root, "root", 0);
-  int lba =
-      unwrap_int(claim_disk_reigon(folder_n_sectors(root)), FS_ERR_DISK_FULL);
+  int lba = claim_disk_reigon(folder_n_sectors(root));
+  unwrap_int(lba, FS_ERR_DISK_FULL);
   folder_to_disk(lba, root);
   return FS_SUCCESS;
 }
@@ -269,10 +297,19 @@ void boot_file_system() {
 
 void init_file_system() {
   create_file_system();
-  Folder f;
-  folder_from_disk_alloc(1, &f);
-  sprintln(f.name.values);
-  // File f;
+  boot_file_system();
+  iprintln(current_folder, 10);
+  sprintln("creating file");
+  // fs_create_file("zeb");
+  // when creating 62 or more files we get a disk error
+  // DISK is not atta ?
+  for (unsigned char c = 0; c < 62; c++) {
+    char buff[] = {c, '\0'};
+    fs_create_file(buff);
+  }
+  fs_list(current_folder);
+  iprintln(current_folder, 10);
+  //   // File f;
   // file_create(&f, "zebs_file", 10, 3);
   // sprintln(f.name.values);
   // file_to_disk(f);

@@ -9,13 +9,18 @@ typedef enum {
 } FileSystemStatus;
 
 typedef struct Folder Folder;
-typedef struct FreeDiskReigon FreeDiskReigon;
 
 typedef struct FreeDiskReigon {
   int lba;
+  int lba_ptr;
   int n_sectors;
-  FreeDiskReigon* next;
+  int next;
 } FreeDiskReigon;
+
+typedef union {
+  short arr[256];
+  FreeDiskReigon fdr;
+} FreeDiskReigonUnion;
 
 typedef struct {
   int lba;
