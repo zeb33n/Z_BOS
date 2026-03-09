@@ -1,5 +1,7 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/printing.h"
+#include "../kernel/filesystem.h"
+#include "../utils/data_structures.h"
 #include "../utils/memory.h"
 #include "../utils/streams.h"
 #include "../utils/strings.h"
@@ -17,6 +19,12 @@ typedef struct CmdBuffer {
   int size;
   char buffer[256];
 } CmdBuffer;
+
+typedef struct {
+  int count;
+  int capacity;
+  DynStr* values;
+} DynTokens;
 
 CmdBuffer* CB;
 
@@ -77,14 +85,53 @@ void buffer_right() {
   cursorlr(1);
 }
 
+void tokens_alloc(char* cmd, DynTokens* tokens) {
+  dyn_init((*tokens));
+  for (int i = 0;; i++) {
+    DynStr token;
+    dyn_init(token);
+    for (; (cmd[i] != ' ') && (cmd[i] != '\0'); i++) {
+      dyn_append(token, cmd[i]);
+    }
+    dyn_append(token, '\0');
+    dyn_append((*tokens), token);
+    if (cmd[i] == '\0') {
+      return;
+    }
+  }
+}
+
+void tokens_free(DynTokens tokens) {
+  for (int i = 0; i < tokens.capacity; i++) {
+    kfree(tokens.values[i].values);
+  }
+  kfree(tokens.values);
+}
+
 void parse_cmd(char* cmd) {
-  if (strstartswith(cmd, "sleep ")) {
+  DynTokens tokens;
+  tokens_alloc(cmd, &tokens);
+  if (strcmp(tokens.values[0].values, "sleep")) {
     int millis;
-    if (str2uint(&millis, cmd + 6, 10) != STR_SUC) {
+    if (str2uint(&millis, tokens.values[1].values, 10) != STR_SUC) {
       sprintln("ERROR");
       return;
     }
     sleep(millis);
+
+  } else if (strcmp(tokens.values[0].values, "newfile")) {
+    sprintln(tokens.values[0].values);
+    sprintln(tokens.values[1].values);
+    fs_report_status(fs_create_file(tokens.values[1].values));
+
+  } else if (strcmp(tokens.values[0].values, "writefile")) {
+    fs_report_status(fs_file_write_content(tokens.values[1].values,
+                                           tokens.values[1].count,
+                                           tokens.values[2].values));
+
+  } else if (strcmp(cmd, "list")) {
+    fs_list();
+
   } else {
     sprintln(cmd);
   }

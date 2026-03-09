@@ -1,3 +1,5 @@
+// what if fileders
+
 #include "../utils/strings.h"
 
 typedef enum {
@@ -5,7 +7,7 @@ typedef enum {
   FS_ERR_CORRUPT_DISK,
   FS_ERR_DISK_FULL,
   FS_ERR_NO_NAME,
-
+  FS_ERR_FILE_NOT_EXIST,
 } FileSystemStatus;
 
 typedef struct Folder Folder;
@@ -52,3 +54,9 @@ typedef union {
 } FolderUnion;
 
 void init_file_system();
+FileSystemStatus fs_create_file(const char* name);
+void fs_report_status(FileSystemStatus status);
+void fs_list();
+FileSystemStatus fs_file_write_content(const char* name,
+                                       int content_size,
+                                       const char* content);

@@ -12,7 +12,7 @@ int FDR;
 
 int current_folder;
 
-void report_status(FileSystemStatus status) {
+void fs_report_status(FileSystemStatus status) {
   switch (status) {
     case FS_ERR_CORRUPT_DISK:
       return sprintln("corrupt disk");
@@ -20,6 +20,8 @@ void report_status(FileSystemStatus status) {
       return sprintln("Disk is full");
     case FS_ERR_NO_NAME:
       return sprintln("corrupt disk");
+    case FS_ERR_FILE_NOT_EXIST:
+      return sprintln("file does nopt exist");
     case FS_SUCCESS:
       return;
   }
@@ -220,7 +222,23 @@ FileSystemStatus file_from_disk_alloc(int lba, File* f) {
   return FS_SUCCESS;
 }
 
-void fs_list(int lba) {
+int file_find_lba(const char* name) {
+  Folder folder;
+  folder_from_disk_alloc(current_folder, &folder);
+  for (int i = 0; i < folder.files.count; i++) {
+    File file;
+    file_from_disk_alloc(folder.files.values[i], &file);
+    if (strcmp(name, file.name.values)) {
+      file_free(file);
+      return folder.files.values[i];
+    }
+    file_free(file);
+  }
+  return -1;
+}
+
+void fs_list() {
+  int lba = current_folder;
   Folder f;
   folder_from_disk_alloc(lba, &f);
   for (int i = 0; i < f.folders.count; i++) {
@@ -265,9 +283,11 @@ FileSystemStatus fs_create_file(const char* name) {
   return FS_SUCCESS;
 }
 
-FileSystemStatus fs_file_write_content(int lba_file,
+FileSystemStatus fs_file_write_content(const char* name,
                                        int content_size,
                                        const char* content) {
+  int lba_file = file_find_lba(name);
+  unwrap_int(lba_file, FS_ERR_FILE_NOT_EXIST);
   File f;
   unwrap_file_status(file_from_disk_alloc(lba_file, &f));
 
@@ -285,7 +305,9 @@ FileSystemStatus fs_file_write_content(int lba_file,
   return FS_SUCCESS;
 }
 
-FileSystemStatus fs_file_read_content(int lba_file, char* buff) {
+FileSystemStatus fs_file_read_content(const char* name, char* buff) {
+  int lba_file = file_find_lba(name);
+  unwrap_int(lba_file, FS_ERR_FILE_NOT_EXIST);
   File f;
   unwrap_file_status(file_from_disk_alloc(lba_file, &f));
   read_28bit(MASTER, f.lba, (f.content_size + 511) / 512, (short*)buff);
@@ -316,7 +338,7 @@ void boot_file_system() {
 void init_file_system() {
   create_file_system();
   boot_file_system();
-  sprintln("creating file");
+  // sprintln("creating file");
   fs_create_file("lauren");
   // when creating 62 or more files we get a disk error
   // DISK is not atta ?
@@ -324,13 +346,13 @@ void init_file_system() {
   //   char buff[] = {c, '\0'};
   //   fs_create_file(buff);
   // }
-  fs_list(current_folder);
-  Folder f;
-  folder_from_disk_alloc(current_folder, &f);
-  report_status(fs_file_write_content(f.files.values[0], 9, "pierogi"));
-  char buff[512];
-  report_status(fs_file_read_content(f.files.values[0], buff));
-  sprintln(buff);
+  fs_list();
+  // Folder f;
+  // folder_from_disk_alloc(current_folder, &f);
+  // fs_report_status(fs_file_write_content(f.files.values[0], 9, "pierogi"));
+  // char buff[512];
+  // fs_report_status(fs_file_read_content(f.files.values[0], buff));
+  // sprintln(buff);
   //   // File f;
   // file_create(&f, "zebs_file", 10, 3);
   // sprintln(f.name.values);

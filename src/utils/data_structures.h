@@ -1,10 +1,3 @@
-// // #define dyn_append(arr, v)         \
-// //   if (arr.count >= arr.capacity) { \
-// //   arr.capacity *= 2
-// // }
-// // arr.values[arr.count++] = v;
-// if (arr.count)
-//
 
 #ifndef DATA_STRUCTURES
 #define DATA_STRUCTURES
@@ -21,11 +14,11 @@
     arr.values[arr.count++] = v;                                             \
   } while (0)
 
-#define dyn_init(arr)                                         \
-  do {                                                        \
-    arr.count = 0;                                            \
-    arr.capacity = 64;                                        \
-    arr.values = kmalloc(sizeof(*arr.values) * arr.capacity); \
+#define dyn_init(arr)                               \
+  do {                                              \
+    arr.count = 0;                                  \
+    arr.capacity = SLAB_SIZE / sizeof(*arr.values); \
+    arr.values = kmalloc(arr.capacity);             \
   } while (0)
 
 #endif
