@@ -102,7 +102,7 @@ void tokens_alloc(char* cmd, DynTokens* tokens) {
 }
 
 void tokens_free(DynTokens tokens) {
-  for (int i = 0; i < tokens.capacity; i++) {
+  for (int i = 0; i < tokens.count; i++) {
     kfree(tokens.values[i].values);
   }
   kfree(tokens.values);
@@ -115,13 +115,12 @@ void parse_cmd(char* cmd) {
     int millis;
     if (str2uint(&millis, tokens.values[1].values, 10) != STR_SUC) {
       sprintln("ERROR");
+      tokens_free(tokens);
       return;
     }
     sleep(millis);
 
   } else if (strcmp(tokens.values[0].values, "newfile")) {
-    sprintln(tokens.values[0].values);
-    sprintln(tokens.values[1].values);
     fs_report_status(fs_create_file(tokens.values[1].values));
 
   } else if (strcmp(tokens.values[0].values, "writefile")) {
@@ -135,6 +134,7 @@ void parse_cmd(char* cmd) {
   } else {
     sprintln(cmd);
   }
+  tokens_free(tokens);
 }
 
 void shell_init() {
