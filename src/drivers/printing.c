@@ -8,8 +8,8 @@ typedef struct Cursor {
   int y;
 } Cursor;
 
-const char BACKGROUND = 0x0;
-const char FOREGROUND = 0x7;
+const char BACKGROUND = 0x6;
+const char FOREGROUND = 0xE;
 
 Cursor CURSOR;
 
@@ -44,7 +44,8 @@ void scroll_without_render() {
 
 // this my cursor we should move the vga cursor aswell
 void vga_init() {
-  CURSOR = {0, 0};
+  CURSOR.x = 0;
+  CURSOR.y = 0;
 
   // init screen with nulls
   for (int i = 0; i < 25; i++) {

@@ -49,6 +49,26 @@ _irq_keyboard:
 	popa
 	iret	
 
+global _irq_timer
+
+[extern _timer_handler]
+
+_irq_timer:
+	pusha
+	push ds
+	push es
+	push fs
+	push gs
+
+	call _timer_handler
+	
+	pop gs
+	pop fs
+	pop es
+	pop ds
+	popa
+	iret
+	
 global _irq_under_40
 
 [extern _less_than_40]

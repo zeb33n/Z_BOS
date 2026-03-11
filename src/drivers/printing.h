@@ -1,3 +1,6 @@
+#ifndef PRINTING
+#define PRINTING
+
 #define WELCOMEMSG                                         \
   "\n"                                                     \
   "__________    __________ ________    _________\n"       \
@@ -26,3 +29,5 @@ void cursorlr(int d);
 void cursordu(int d);
 
 void clear_line_from_cursor();
+
+#endif

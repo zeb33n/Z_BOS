@@ -11,8 +11,8 @@ mov ds, ax
 mov bp, 0x8000
 mov sp, bp
 
-mov bx, KERNEL_LOCATION ; we want to load the kwrnwl to the kernel location
-mov dh, 20 ;might have to change this number. number of sectors to read
+mov bx, KERNEL_LOCATION ; we want to load the kernel to the kernel location
+mov dh, BOOT_SECTORS ;might have to change this number. number of sectors to read
 
 mov ah, 0x02
 mov al, dh  ; number of sectors
@@ -23,31 +23,30 @@ mov dl, [BOOT_DISK]
 int 0x13                ;load from disk
 
                        ; error managment
+mov bx, errorLoad
 jc error               ; jump if carry flag is set
-cmp al, 2
+cmp al, BOOT_SECTORS
 jne error
 
-jmp endload
 
+mov bx, errorMem
+; call do_e820       ; detect memory doesnt work on qemu
+; we should use multiboot
+jc error
 
-error: 
-    mov ah, 0x0e 
-    mov bx, errorMsg
+jmp continue
 
-eloop:
+error:
+    mov ah, 0x0e
+.eloop:
     mov al, [bx]
     cmp al, 0
-    je endload
+    je finish
     int 0x10
     inc bx 
-    jmp eloop
+    jmp .eloop
 
-endload:
-                                    
-mov ah, 0x0
-mov al, 0x3
-int 0x10                ; text mode
-
+continue:
 
 CODE_SEG equ GDT_code - GDT_start
 DATA_SEG equ GDT_data - GDT_start
@@ -61,10 +60,15 @@ jmp CODE_SEG:start_protected_mode
 
 jmp $
                                 
-errorMsg: 
-    db "error", 0 
+errorLoad: 
+    db "segments read did not match expected error", 0 
+
+errorMem: 
+    db "could not detect memory", 0 
+
                                     
 BOOT_DISK: db 0
+BOOT_SECTORS equ 40
 
 GDT_start:
     GDT_null:
@@ -105,7 +109,7 @@ start_protected_mode:
 	mov fs, ax
 	mov gs, ax
 
-	mov ebp, 0x90000		; 32 bit stack base pointer
+	mov ebp, 0x60000		; 32 bit stack base pointer
 	mov esp, ebp
 
     ; ; print digit    
@@ -131,6 +135,10 @@ start_protected_mode:
     jmp KERNEL_LOCATION
 
                                      
+%include "src/bootloader/mem_detect.asm"
  
+finish:
+
+
 times 510-($-$$) db 0              
 dw 0xaa55

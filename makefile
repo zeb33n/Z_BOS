@@ -8,16 +8,23 @@ SRC = src
 
 BIN= ./bins
 
-_CSRCS := $(shell find ./ -name "*.cpp")
-CSRCS = $(patsubst %.cpp,%,$(_CSRCS))
+_CSRCS := $(shell find ./ -name "*.c")
+CSRCS = $(patsubst %.c,%,$(_CSRCS))
 
 ASMBINS := src/bootloader/boot src/bootloader/zeroes
 ASMELFS := src/kernel/idtasm src/bootloader/kernel_entry
 
 all: prebuild build
 
-run: prebuild build
-	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=floppy,  -m 128M
+run: prebuild build resize
+	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide,  -m 256M
+
+test: CFLAGS += -DTEST
+test: prebuild build resize
+	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide,  -m 256M
+
+resize:
+	qemu-img resize $(BIN)/OS.bin 1G
 
 build: bin elf c
 	$(LD) -o $(BIN)/full_kernel.bin -Ttext 0x1000 $(shell find $(BIN) -name "*.o" | xargs)  --oformat binary
@@ -26,7 +33,6 @@ build: bin elf c
 prebuild: 
 	rm -rf $(BIN)
 	mkdir $(BIN)
-
 
 elf: $(ASMELFS) 
 
@@ -42,7 +48,7 @@ $(ASMBINS): %: %.asm
 
 c: $(CSRCS) 
 
-$(CSRCS): % : %.cpp
+$(CSRCS): % : %.c
 	mkdir -p $(BIN)/$(shell dirname $(subst $(SRC)/,,$@))
 	$(CC) $(CFLAGS) $< -o $(subst $(SRC),$(BIN),$@.o)
 
