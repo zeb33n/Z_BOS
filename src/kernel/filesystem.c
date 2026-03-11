@@ -305,13 +305,20 @@ FileSystemStatus fs_file_write_content(const char* name,
   return FS_SUCCESS;
 }
 
-FileSystemStatus fs_file_read_content(const char* name, char* buff) {
+FileSystemStatus fs_file_read_content(const char* name, DynStr* buff) {
   int lba_file = file_find_lba(name);
   unwrap_int(lba_file, FS_ERR_FILE_NOT_EXIST);
+
   File f;
   unwrap_file_status(file_from_disk_alloc(lba_file, &f));
-  read_28bit(MASTER, f.lba, (f.content_size + 511) / 512, (short*)buff);
+
+  int n_sectors = (f.content_size + 511) / 512;
+  dyn_init((*buff), n_sectors * 512);
+  buff->count = f.content_size;
+  read_28bit(MASTER, f.lba, n_sectors, (short*)(buff->values));
+
   file_free(f);
+
   return FS_SUCCESS;
 }
 
@@ -338,28 +345,4 @@ void boot_file_system() {
 void init_file_system() {
   create_file_system();
   boot_file_system();
-  // sprintln("creating file");
-  fs_create_file("lauren");
-  // when creating 62 or more files we get a disk error
-  // DISK is not atta ?
-  // for (unsigned char c = 0; c < 62; c++) {
-  //   char buff[] = {c, '\0'};
-  //   fs_create_file(buff);
-  // }
-  fs_list();
-  // Folder f;
-  // folder_from_disk_alloc(current_folder, &f);
-  // fs_report_status(fs_file_write_content(f.files.values[0], 9, "pierogi"));
-  // char buff[512];
-  // fs_report_status(fs_file_read_content(f.files.values[0], buff));
-  // sprintln(buff);
-  //   // File f;
-  // file_create(&f, "zebs_file", 10, 3);
-  // sprintln(f.name.values);
-  // file_to_disk(f);
-  // File g;
-  // file_from_disk(&g, 3);
-  // iprintln(g.content_size, 10);
-  // iprintln(g.lba, 10);
-  // sprintln(g.name.values);
 }

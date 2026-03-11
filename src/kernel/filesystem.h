@@ -60,4 +60,4 @@ void fs_list();
 FileSystemStatus fs_file_write_content(const char* name,
                                        int content_size,
                                        const char* content);
-FileSystemStatus fs_file_read_content(const char* name, char* buff);
+FileSystemStatus fs_file_read_content(const char* name, DynStr* buff);

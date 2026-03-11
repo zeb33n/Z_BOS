@@ -2,8 +2,35 @@
 
 #include "../drivers/disk.h"
 #include "../drivers/printing.h"
+#include "../kernel/filesystem.h"
 #include "../utils/memory.h"
 #include "../utils/strings.h"
+
+void test_file_system() {
+  init_file_system();
+  sprint("test filesystem... ");
+  if (fs_create_file("TEST_FILE") != FS_SUCCESS) {
+    sprintln("[error]");
+    return;
+  }
+  if (fs_file_write_content("TEST_FILE", 10, "0123456789") != FS_SUCCESS) {
+    sprintln("[error]");
+    return;
+  }
+  DynStr buff;
+  if (fs_file_read_content("TEST_FILE", &buff) != FS_SUCCESS) {
+    sprintln("[error]");
+    return;
+  }
+  if (!strcmp("0123456789", buff.values)) {
+    kfree(buff.values);
+    sprintln("[error]");
+    return;
+  }
+  sprintln("[ok]");
+  kfree(buff.values);
+  return;
+}
 
 // TODO fix broken disk driver
 void test_disk_driver() {
@@ -85,6 +112,7 @@ void test_memory() {
 void run_tests() {
   test_disk_driver();
   test_memory();
+  test_file_system();
 }
 
 #endif
