@@ -128,6 +128,11 @@ void parse_cmd(char* cmd) {
                                            tokens.values[1].count,
                                            tokens.values[2].values));
 
+  } else if (strcmp(tokens.values[0].values, "readfile")) {
+    char buff[512];
+    fs_report_status(fs_file_read_content(tokens.values[1].values, buff));
+    sprintln(buff);
+
   } else if (strcmp(cmd, "list")) {
     fs_list();
 

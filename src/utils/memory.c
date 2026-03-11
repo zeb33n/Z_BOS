@@ -73,6 +73,7 @@ void* kmalloc(int size) {
 }
 
 // TODO what if n_slabs is less than 1
+// TODO somethink to check pointer is aligned as expected
 void kfree(void* ptr) {
   int* base = (int*)ptr - 1;
   int n_slabs = *base;
