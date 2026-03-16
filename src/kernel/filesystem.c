@@ -1,5 +1,6 @@
-// TODO re-write this a more decentralised slabby way
-// with less gaps on disk
+// TODO delete file/folder
+// TODO change directory
+// TODO rewrite with fileders
 
 #include "../drivers/disk.h"
 #include "../drivers/printing.h"
@@ -8,7 +9,7 @@
 #include "../utils/types.h"
 #include "filesystem.h"
 
-int FDR;
+int FDR_LBA;
 
 int current_folder;
 
@@ -55,29 +56,31 @@ void fdr_read(int lba, FreeDiskReigon* fdr) {
 
 int claim_disk_reigon(int n_sectors) {
   FreeDiskReigon fdr;
-  fdr_read(FDR, &fdr);
+  fdr_read(FDR_LBA, &fdr);
+  int fdr_lba = FDR_LBA;
   for (;;) {
     if (n_sectors <= fdr.n_sectors - fdr.lba_ptr) {
       int out = fdr.lba_ptr;
       fdr.lba_ptr += n_sectors;
-      fdr_write(fdr.lba, fdr);
+      fdr_write(fdr_lba, fdr);
       return out;
-    }
-    if (fdr.next == 0) {
+    } else if (fdr.next == 0) {
       return -1;
     }
+    fdr_lba = fdr.next;
     fdr_read(fdr.next, &fdr);
   }
 }
 
-void return_disk_reigon(int lba, int n_sectors) {
-  if (lba <= 0) {
+void return_disk_reigon(int lba_free, int n_sectors) {
+  if (lba_free <= 0) {
     return;
   }
-  FreeDiskReigon fdr_old;
-  fdr_read(FDR, &fdr_old);
-  FreeDiskReigon fdr = {lba, lba + 1, n_sectors, fdr_old.lba};
-  FDR = fdr.lba;
+
+  FreeDiskReigon fdr = {lba_free, n_sectors, FDR_LBA};
+  int lba_fdr = claim_disk_reigon(1);
+  fdr_write(lba_fdr, fdr);
+  FDR_LBA = lba_fdr;
 }
 
 void folder_init_alloc(Folder* f, const char* name, int parent_lba) {
@@ -264,7 +267,7 @@ FileSystemStatus fs_create_file(const char* name) {
   unwrap_file_status(folder_from_disk_alloc(current_folder, &folder));
 
   int file_lba = claim_disk_reigon(file_n_sectors(file));
-  unwrap_int(claim_disk_reigon(file_n_sectors(file)), FS_ERR_DISK_FULL);
+  unwrap_int(file_lba, FS_ERR_DISK_FULL);
   file_to_disk(file_lba, file);
   file_free(file);
 
@@ -283,6 +286,7 @@ FileSystemStatus fs_create_file(const char* name) {
   return FS_SUCCESS;
 }
 
+// if i write to a file twice it complains disk is full
 FileSystemStatus fs_file_write_content(const char* name,
                                        int content_size,
                                        const char* content) {
@@ -324,22 +328,22 @@ FileSystemStatus fs_file_read_content(const char* name, DynStr* buff) {
 
 FileSystemStatus create_file_system() {
   FreeDiskReigon fdr;
-  fdr.lba = 1;
   fdr.lba_ptr = 2;
   fdr.n_sectors = disk_info.sectors28;
   fdr.next = 0;
-  fdr_write(fdr.lba, fdr);
-  FDR = fdr.lba;
+  fdr_write(1, fdr);
+  FDR_LBA = 1;
   Folder root;
   folder_init_alloc(&root, "root", 0);
   int lba = claim_disk_reigon(folder_n_sectors(root));
+  current_folder = lba;
   unwrap_int(lba, FS_ERR_DISK_FULL);
   folder_to_disk(lba, root);
   return FS_SUCCESS;
 }
 
 void boot_file_system() {
-  current_folder = 1;
+  // current_folder = 2;
 }
 
 void init_file_system() {

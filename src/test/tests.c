@@ -27,8 +27,23 @@ void test_file_system() {
     sprintln("[error]");
     return;
   }
+  if (fs_file_write_content("TEST_FILE", 10, "9876543210") != FS_SUCCESS) {
+    sprintln("[error]");
+    return;
+  }
+  DynStr buff2;
+  if (fs_file_read_content("TEST_FILE", &buff2) != FS_SUCCESS) {
+    sprintln("[error]");
+    return;
+  }
+  if (!strcmp("9876543210", buff2.values)) {
+    kfree(buff2.values);
+    sprintln("[error]");
+    return;
+  }
   sprintln("[ok]");
   kfree(buff.values);
+  kfree(buff2.values);
   return;
 }
 

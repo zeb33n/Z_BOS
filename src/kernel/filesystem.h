@@ -1,4 +1,3 @@
-// what if fileders
 
 #include "../utils/strings.h"
 
@@ -13,7 +12,6 @@ typedef enum {
 typedef struct Folder Folder;
 
 typedef struct FreeDiskReigon {
-  int lba;
   int lba_ptr;
   int n_sectors;
   int next;
