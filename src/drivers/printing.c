@@ -1,31 +1,32 @@
 // TODO support coloured text
-// TODO move the vga mode cursor
 
 #include "../utils/portio.h"
+#include "printing.h"
 
 typedef struct Cursor {
   int x;
   int y;
 } Cursor;
 
-const char BACKGROUND = 0x6;
-const char FOREGROUND = 0xE;
-
 Cursor CURSOR;
 
-char SCREEN[25][80];
+short SCREEN[25][80];
 
-void write_char(char c, char fcolour, char bcolour, int x, int y) {
-  short colours = (bcolour << 4) | (fcolour & 0x0f);
+void write_short(short s, int x, int y) {
   volatile short* where;
   where = (volatile short*)0xb8000 + (y * 80 + x);
-  *where = c | (colours << 8);  // load the value into the pointer
+  *where = s;  // load the value into the pointer
+}
+
+short set_colour(char c, char bcolour, char fcolour) {
+  short colours = (bcolour << 4) | (fcolour & 0x0f);
+  return c | (colours << 8);
 }
 
 void printscreen() {
   for (int y = 0; y < 25; y++) {
     for (int x = 0; x < 80; x++) {
-      write_char(SCREEN[y][x], FOREGROUND, BACKGROUND, x, y);
+      write_short(SCREEN[y][x], x, y);
     }
   }
 }
@@ -37,12 +38,11 @@ void scroll_without_render() {
     }
   }
   for (int i = 0; i < 80; i++) {
-    SCREEN[24][i] = 0;
+    SCREEN[24][i] = set_colour(0, BACKGROUND, FOREGROUND);
   }
   CURSOR.y--;
 }
 
-// this my cursor we should move the vga cursor aswell
 void vga_init() {
   CURSOR.x = 0;
   CURSOR.y = 0;
@@ -50,7 +50,7 @@ void vga_init() {
   // init screen with nulls
   for (int i = 0; i < 25; i++) {
     for (int j = 0; j < 80; j++) {
-      SCREEN[i][j] = 0;
+      SCREEN[i][j] = set_colour(0, BACKGROUND, FOREGROUND);
     }
   }
 
@@ -96,14 +96,14 @@ void cursordu(int d) {
   cursor_set(CURSOR.x, CURSOR.y);
 }
 
-void sprintln(const char* string) {
+void _sprintln(const char* string, char bcolour, char fcolour) {
   while (*string != '\0') {
     if (*string == '\n') {
       newline();
       string++;
       continue;
     }
-    SCREEN[CURSOR.y][CURSOR.x] = *string;
+    SCREEN[CURSOR.y][CURSOR.x] = set_colour(*string, bcolour, fcolour);
     string++;
     cursorlr(1);
   }
@@ -111,23 +111,23 @@ void sprintln(const char* string) {
   printscreen();
 };
 
-void sprint(const char* string) {
+void _sprint(const char* string, char bcolour, char fcolour) {
   while (*string != '\0') {
     if (*string == '\n') {
       newline();
       string++;
       continue;
     }
-    SCREEN[CURSOR.y][CURSOR.x] = *string;
+    SCREEN[CURSOR.y][CURSOR.x] = set_colour(*string, bcolour, fcolour);
     string++;
     cursorlr(1);
   }
   printscreen();
 };
 
-void iprintln(long integer, int base) {
+void _iprintln(long integer, int base, char bcolour, char fcolour) {
   if (integer == 0) {
-    SCREEN[CURSOR.y][CURSOR.x] = '0';
+    SCREEN[CURSOR.y][CURSOR.x] = set_colour('0', bcolour, fcolour);
     newline();
     printscreen();
     return;
@@ -142,11 +142,54 @@ void iprintln(long integer, int base) {
     counter++;
   }
   for (int i = 1; i <= counter; i++) {
-    SCREEN[CURSOR.y][CURSOR.x] = outstring[counter - i];
+    SCREEN[CURSOR.y][CURSOR.x] =
+        set_colour(outstring[counter - i], bcolour, fcolour);
     cursorlr(1);
   }
   newline();
   printscreen();
+}
+
+void _cprint(char c, char bcolour, char fcolour) {
+  if (c == '\n') {
+    newline();
+    return;
+  }
+  SCREEN[CURSOR.y][CURSOR.x] = set_colour(c, bcolour, fcolour);
+  cursorlr(1);
+  printscreen();
+}
+
+void sprintln(const char* string) {
+  _sprintln(string, BACKGROUND, FOREGROUND);
+}
+
+void sprintlnc(const char* string, char bg, char fg) {
+  _sprintln(string, bg, fg);
+}
+
+void sprint(const char* string) {
+  _sprint(string, BACKGROUND, FOREGROUND);
+}
+
+void sprintc(const char* string, char bg, char fg) {
+  _sprint(string, bg, fg);
+}
+
+void iprintln(long integer, int base) {
+  _iprintln(integer, base, BACKGROUND, FOREGROUND);
+}
+
+void iprintlnc(long integer, int base, char bg, char fg) {
+  _iprintln(integer, base, bg, fg);
+}
+
+void cprint(char c) {
+  _cprint(c, BACKGROUND, FOREGROUND);
+}
+
+void cprintc(char c, char bg, char fg) {
+  _cprint(c, bg, fg);
 }
 
 // have a buffer and buffer delete in a tty echo server fingee
@@ -163,17 +206,7 @@ void cdelete() {
 
 void clear_line_from_cursor() {
   for (int i = CURSOR.x; i < 80; i++) {
-    SCREEN[CURSOR.y][i] = 0;
+    SCREEN[CURSOR.y][i] = set_colour(0, BACKGROUND, FOREGROUND);
   }
-  printscreen();
-}
-
-void cprint(char c) {
-  if (c == '\n') {
-    newline();
-    return;
-  }
-  SCREEN[CURSOR.y][CURSOR.x] = c;
-  cursorlr(1);
   printscreen();
 }

@@ -16,13 +16,13 @@ int current_folder;
 void fs_report_status(FileSystemStatus status) {
   switch (status) {
     case FS_ERR_CORRUPT_DISK:
-      return sprintln("corrupt disk");
+      return sprintlnc("CORRUPT DISK", BACKGROUND, RED);
     case FS_ERR_DISK_FULL:
-      return sprintln("Disk is full");
+      return sprintlnc("DISK FULL", BACKGROUND, RED);
     case FS_ERR_NO_NAME:
-      return sprintln("corrupt disk");
+      return sprintlnc("NO NAME", BACKGROUND, RED);
     case FS_ERR_FILE_NOT_EXIST:
-      return sprintln("file does nopt exist");
+      return sprintlnc("FILE DOES NOT EXIST", BACKGROUND, RED);
     case FS_SUCCESS:
       return;
   }

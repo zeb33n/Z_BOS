@@ -6,42 +6,55 @@
 #include "../utils/memory.h"
 #include "../utils/strings.h"
 
+void ok() {
+  sprint("[");
+  sprintc("ok", BACKGROUND, GREEN);
+  sprintln("]");
+}
+
+void error() {
+  sprint("[");
+  sprintc("error", BACKGROUND, RED);
+  sprintln("]");
+}
+
 void test_file_system() {
   init_file_system();
   sprint("test filesystem... ");
   if (fs_create_file("TEST_FILE") != FS_SUCCESS) {
-    sprintln("[error]");
+    error();
     return;
   }
   if (fs_file_write_content("TEST_FILE", 10, "0123456789") != FS_SUCCESS) {
-    sprintln("[error]");
+    error();
     return;
   }
   DynStr buff;
   if (fs_file_read_content("TEST_FILE", &buff) != FS_SUCCESS) {
-    sprintln("[error]");
+    error();
     return;
   }
   if (!strcmp("0123456789", buff.values)) {
     kfree(buff.values);
-    sprintln("[error]");
+    error();
     return;
   }
   if (fs_file_write_content("TEST_FILE", 10, "9876543210") != FS_SUCCESS) {
-    sprintln("[error]");
+    error();
     return;
   }
   DynStr buff2;
   if (fs_file_read_content("TEST_FILE", &buff2) != FS_SUCCESS) {
-    sprintln("[error]");
+    error();
     return;
   }
   if (!strcmp("9876543210", buff2.values)) {
     kfree(buff2.values);
-    sprintln("[error]");
+    error();
     return;
   }
-  sprintln("[ok]");
+
+  ok();
   kfree(buff.values);
   kfree(buff2.values);
   return;
@@ -75,9 +88,9 @@ void test_disk_driver() {
   }
 
   if (!err) {
-    sprintln("[ok]");
+    ok();
   } else {
-    sprintln("[error]");
+    error();
   }
 }
 
@@ -114,9 +127,9 @@ void test_memory() {
     err = 1;
   }
   if (err) {
-    sprintln("[error]");
+    error();
   } else {
-    sprintln("[ok]");
+    ok();
     kfree((void*)c);
     kfree((void*)d);
     kfree((void*)e);
@@ -128,6 +141,7 @@ void run_tests() {
   test_disk_driver();
   test_memory();
   test_file_system();
+  sprintln("");
 }
 
 #endif

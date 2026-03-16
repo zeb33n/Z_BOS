@@ -108,13 +108,16 @@ void tokens_free(DynTokens tokens) {
   kfree(tokens.values);
 }
 
+// TODO these functions should return string to be printed
 void parse_cmd(char* cmd) {
   DynTokens tokens;
   tokens_alloc(cmd, &tokens);
   if (strcmp(tokens.values[0].values, "sleep")) {
     int millis;
     if (str2uint(&millis, tokens.values[1].values, 10) != STR_SUC) {
-      sprintln("ERROR");
+      sprintc("ERROR: CANT CONVERT ", BACKGROUND, RED);
+      sprint(tokens.values[1].values);
+      sprintlnc(" TO INT", BACKGROUND, RED);
       tokens_free(tokens);
       return;
     }
@@ -138,6 +141,7 @@ void parse_cmd(char* cmd) {
     fs_list();
 
   } else {
+    sprintc("UNRECOGNISED CMD ", BACKGROUND, RED);
     sprintln(cmd);
   }
   tokens_free(tokens);
@@ -145,7 +149,7 @@ void parse_cmd(char* cmd) {
 
 void shell_init() {
   buffer_reset();
-  sprint("> ");
+  sprintc("> ", BACKGROUND, YELLOW);
   for (;;) {
     char c = stdin_get();
     switch (c) {
@@ -165,7 +169,7 @@ void shell_init() {
         sprintln("");
         parse_cmd(CB->buffer);
         buffer_reset();
-        sprint("> ");
+        sprintc("> ", BACKGROUND, YELLOW);
         break;
     }
   }

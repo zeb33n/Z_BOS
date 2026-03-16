@@ -53,16 +53,16 @@ DiskStatus identify(int drive) {
 int disk_status_handle(DiskStatus s) {
   switch (s) {
     case DISK_ERR_NO_DRIVE:
-      sprintln("NO DRIVE FOUND");
+      sprintlnc("NO DRIVE FOUND", BACKGROUND, RED);
       return 0;
     case DISK_ERR_NOT_ATA:
-      sprintln("DISK IS NOT ATA");
+      sprintlnc("DISK IS NOT ATA", BACKGROUND, RED);
       return 0;
     case DISK_ERR_UNRECOGNISED_CMD:
-      sprintln("UNRECOGNISED DISK COMMAND");
+      sprintlnc("UNRECOGNISED DISK COMMAND", BACKGROUND, RED);
       return 0;
     case DISK_ERR_SECTOR_OVERFLOW:
-      sprintln("SECTOR OVERFLOW");
+      sprintlnc("SECTOR OVERFLOW", BACKGROUND, RED);
       return 0;
     case DISK_SUCCESS:
       return 1;
