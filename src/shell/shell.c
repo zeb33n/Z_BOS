@@ -137,6 +137,9 @@ void parse_cmd(char* cmd) {
     sprintln(buff.values);
     kfree(buff.values);
 
+  } else if (strcmp(tokens.values[0].values, "rmfile")) {
+    fs_report_status(fs_delete_file(tokens.values[1].values));
+
   } else if (strcmp(cmd, "list")) {
     fs_list();
 

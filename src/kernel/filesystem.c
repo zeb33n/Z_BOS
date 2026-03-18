@@ -233,11 +233,32 @@ int file_find_lba(const char* name) {
     file_from_disk_alloc(folder.files.values[i], &file);
     if (strcmp(name, file.name.values)) {
       file_free(file);
+      folder_free(folder);
       return folder.files.values[i];
     }
     file_free(file);
   }
+  folder_free(folder);
   return -1;
+}
+
+FileSystemStatus folder_remove_file_lba(const char* name) {
+  Folder folder;
+  folder_from_disk_alloc(current_folder, &folder);
+  for (int i = 0; i < folder.files.count; i++) {
+    File file;
+    file_from_disk_alloc(folder.files.values[i], &file);
+    if (strcmp(name, file.name.values)) {
+      dyn_rm(folder.files, i);
+      folder_to_disk(current_folder, folder);
+      file_free(file);
+      folder_free(folder);
+      return FS_SUCCESS;
+    }
+    file_free(file);
+  }
+  folder_free(folder);
+  return FS_ERR_FILE_NOT_EXIST;
 }
 
 void fs_list() {
@@ -323,6 +344,24 @@ FileSystemStatus fs_file_read_content(const char* name, DynStr* buff) {
 
   file_free(f);
 
+  return FS_SUCCESS;
+}
+
+FileSystemStatus fs_delete_file(const char* name) {
+  int lba_file = file_find_lba(name);
+  unwrap_int(lba_file, FS_ERR_FILE_NOT_EXIST);
+  File file;
+  unwrap_file_status(file_from_disk_alloc(lba_file, &file));
+
+  int n_header_sectors = file_n_sectors(file);
+  int n_content_sectors = (file.content_size + 511) / 512;
+
+  return_disk_reigon(lba_file, n_header_sectors);
+  return_disk_reigon(file.lba, n_content_sectors);
+
+  unwrap_file_status(folder_remove_file_lba(name));
+
+  file_free(file);
   return FS_SUCCESS;
 }
 

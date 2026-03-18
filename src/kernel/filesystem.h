@@ -59,3 +59,4 @@ FileSystemStatus fs_file_write_content(const char* name,
                                        int content_size,
                                        const char* content);
 FileSystemStatus fs_file_read_content(const char* name, DynStr* buff);
+FileSystemStatus fs_delete_file(const char* name);

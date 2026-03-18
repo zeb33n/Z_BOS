@@ -28,6 +28,14 @@
     arr.values = kmalloc(arr.capacity * sizeof(*arr.values)); \
   } while (0)
 
+#define dyn_rm(arr, index)                        \
+  do {                                            \
+    for (int i = index; i < arr.count - 1; i++) { \
+      arr.values[i] = arr.values[i + 1];          \
+    }                                             \
+    arr.count--;                                  \
+  } while (0)
+
 #define _dyn_init_get(_1, _2, NAME, ...) NAME
 #define dyn_init(...) \
   _dyn_init_get(__VA_ARGS__, dyn_init_size, dyn_init_default)(__VA_ARGS__)
