@@ -9,7 +9,13 @@ typedef enum {
   FS_ERR_FILE_NOT_EXIST,
 } FileSystemStatus;
 
-typedef struct Folder Folder;
+typedef struct Fileder Fileder;
+
+typedef struct {
+  int count;
+  int capacity;
+  int* values;
+} DynIntArr;
 
 typedef struct FreeDiskReigon {
   int lba_ptr;
@@ -32,12 +38,6 @@ typedef union {
   short arr[256];
   File file;
 } FileUnion;
-
-typedef struct {
-  int count;
-  int capacity;
-  int* values;
-} DynIntArr;
 
 typedef struct Folder {
   DynStr name;

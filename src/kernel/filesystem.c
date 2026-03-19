@@ -22,7 +22,7 @@ void fs_report_status(FileSystemStatus status) {
     case FS_ERR_NO_NAME:
       return sprintlnc("NO NAME", BACKGROUND, RED);
     case FS_ERR_FILE_NOT_EXIST:
-      return sprintlnc("FILE DOES NOT EXIST", BACKGROUND, RED);
+      return sprintlnc("FILEDER DOES NOT EXIST", BACKGROUND, RED);
     case FS_SUCCESS:
       return;
   }
