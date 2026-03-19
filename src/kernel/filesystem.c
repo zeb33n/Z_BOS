@@ -115,9 +115,9 @@ void fileder_to_disk(int lba, Fileder f) {
   char buff[map.n_sectors * 512];
   memcopy(buff, &f, sizeof(Fileder));
   memcopy(buff + map.name_index, f.name.values, f.name.count);
-  memcopy(buff + map.content_index, f.content.values, f.content.count);
   memcopy(buff + map.fileders_index, f.fileders.values,
           f.fileders.count * sizeof(int));
+  memcopy(buff + map.content_index, f.content.values, f.content.count);
 
   write_28bit(MASTER, lba, map.n_sectors, (short*)buff);
 }
@@ -162,6 +162,7 @@ void fileder_read_name_alloc(int lba, DynStr* name) {
 
   read_28bit(MASTER, lba, n_sectors, (short*)buff);
   char* name_ptr = buff + map.name_index;
+  dyn_init((*name));
   for (int i = 0; i < f_header.fileder.name.count; i++) {
     dyn_append((*name), name_ptr[i]);
   }
@@ -182,6 +183,25 @@ int fileder_find_lba(const char* name) {
   }
   fileder_free(f);
   return -1;
+}
+
+FileSystemStatus fileder_update_lba(const char* name, int lba) {
+  Fileder f;
+  fileder_from_disk_alloc(current_folder, &f);
+  for (int i = 0; i < f.fileders.count; i++) {
+    DynStr dynname;
+    fileder_read_name_alloc(f.fileders.values[i], &dynname);
+    if (strcmp(name, dynname.values)) {
+      f.fileders.values[i] = lba;
+      fileder_to_disk(current_folder, f);
+      fileder_free(f);
+      kfree(dynname.values);
+      return FS_SUCCESS;
+    }
+    kfree(dynname.values);
+  }
+  fileder_free(f);
+  return FS_ERR_FILE_NOT_EXIST;
 }
 
 FileSystemStatus fileder_remove_member(const char* name) {
@@ -252,15 +272,21 @@ FileSystemStatus fs_fileder_write_content(const char* name,
   Fileder f;
   fileder_from_disk_alloc(lba, &f);
 
-  return_disk_reigon(lba, fileder_map(f).n_sectors);
+  int sectors_before = fileder_map(f).n_sectors;
 
   dyn_clear(f.content);
   for (int i = 0; i < content_size; i++) {
     dyn_append(f.content, content[i]);
   }
 
-  lba = claim_disk_reigon(fileder_map(f).n_sectors);
-  unwrap_int(lba, FS_ERR_DISK_FULL);
+  int sectors_after = fileder_map(f).n_sectors;
+
+  if (sectors_before < sectors_after) {
+    return_disk_reigon(lba, sectors_before);
+    int lba = claim_disk_reigon(sectors_after);
+    unwrap_int(lba, FS_ERR_DISK_FULL);
+    fileder_update_lba(name, lba);
+  }
 
   fileder_to_disk(lba, f);
   fileder_free(f);
@@ -314,6 +340,7 @@ FileSystemStatus create_file_system() {
   unwrap_int(lba, FS_ERR_DISK_FULL);
   fileder_to_disk(lba, root);
   fileder_free(root);
+
   return FS_SUCCESS;
 }
 
