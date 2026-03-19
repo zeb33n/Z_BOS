@@ -9,8 +9,6 @@ typedef enum {
   FS_ERR_FILE_NOT_EXIST,
 } FileSystemStatus;
 
-typedef struct Fileder Fileder;
-
 typedef struct {
   int count;
   int capacity;
@@ -29,34 +27,26 @@ typedef union {
 } FreeDiskReigonUnion;
 
 typedef struct {
-  int lba;
-  int content_size;
-  DynStr name;
-} File;
-
-typedef union {
-  short arr[256];
-  File file;
-} FileUnion;
-
-typedef struct Folder {
-  DynStr name;
-  DynIntArr folders;
-  DynIntArr files;
   int parent_lba;
-} Folder;
+  DynStr name;
+  DynStr content;
+  DynIntArr fileders;
+} Fileder;
 
-typedef union {
-  short arr[256];
-  Folder folder;
-} FolderUnion;
+typedef struct {
+  int name_index;
+  int fileders_index;
+  int content_index;
+  int size_on_disk;
+  int n_sectors;
+} FilederDiskMap;
 
 void init_file_system();
-FileSystemStatus fs_create_file(const char* name);
+FileSystemStatus fs_create_fileder(const char* name);
 void fs_report_status(FileSystemStatus status);
 void fs_list();
-FileSystemStatus fs_file_write_content(const char* name,
-                                       int content_size,
-                                       const char* content);
-FileSystemStatus fs_file_read_content(const char* name, DynStr* buff);
-FileSystemStatus fs_delete_file(const char* name);
+FileSystemStatus fs_fileder_write_content(const char* name,
+                                          int content_size,
+                                          const char* content);
+FileSystemStatus fs_fileder_read_alloc(const char* name, DynStr* buff);
+FileSystemStatus fs_delete_fileder(const char* name);

@@ -2,7 +2,6 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/printing.h"
 #include "../shell/shell.h"
-#include "../utils/data_structures.h"
 #include "../utils/memory.h"
 #include "../utils/timer.h"
 #include "filesystem.h"

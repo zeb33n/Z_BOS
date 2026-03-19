@@ -83,285 +83,220 @@ void return_disk_reigon(int lba_free, int n_sectors) {
   FDR_LBA = lba_fdr;
 }
 
-void folder_init_alloc(Folder* f, const char* name, int parent_lba) {
+void fileder_init_alloc(Fileder* f, const char* name, int parent_lba) {
   f->parent_lba = parent_lba;
-  dyn_init(f->folders);
-  dyn_init(f->files);
+  dyn_init(f->fileders);
   dyn_init(f->name);
+  dyn_init(f->content);
   for (int i = 0; i <= strlen(name); i++) {
     dyn_append(f->name, name[i]);
   }
 }
 
-void folder_free(Folder f) {
-  kfree(f.folders.values);
-  kfree(f.files.values);
+void fileder_free(Fileder f) {
+  kfree(f.fileders.values);
   kfree(f.name.values);
+  kfree(f.content.values);
 }
 
-int folder_n_sectors(Folder f) {
-  int folder_sectors = (sizeof(int) * f.folders.count + 511) / 512;
-  int file_sectors = (sizeof(int) * f.files.count + 511) / 512;
-  int name_sectors = (f.name.count + 511) / 512;
-  return folder_sectors + file_sectors + name_sectors + 1;
+FilederDiskMap fileder_map(Fileder f) {
+  FilederDiskMap map;
+  map.name_index = sizeof(Fileder);
+  map.fileders_index = map.name_index + f.name.count;
+  map.content_index = map.fileders_index + f.fileders.count * sizeof(int);
+  map.size_on_disk = map.content_index + f.content.count;
+  map.n_sectors = (map.size_on_disk + 511) / 512;
+  return map;
 }
 
-void folder_to_disk(int lba, Folder f) {
-  int folder_sectors = (sizeof(int) * f.folders.count + 511) / 512;
-  int file_sectors = (sizeof(int) * f.files.count + 511) / 512;
-  int name_sectors = (f.name.count + 511) / 512;
+void fileder_to_disk(int lba, Fileder f) {
+  FilederDiskMap map = fileder_map(f);
 
-  int lba_folders = lba + 1;
-  int lba_files = lba_folders + folder_sectors;
-  int lba_name = lba_files + file_sectors;
+  char buff[map.n_sectors * 512];
+  memcopy(buff, &f, sizeof(Fileder));
+  memcopy(buff + map.name_index, f.name.values, f.name.count);
+  memcopy(buff + map.content_index, f.content.values, f.content.count);
+  memcopy(buff + map.fileders_index, f.fileders.values,
+          f.fileders.count * sizeof(int));
 
-  FolderUnion f_union;
-  f_union.folder = f;
-  write_28bit(MASTER, lba, 1, f_union.arr);
+  write_28bit(MASTER, lba, map.n_sectors, (short*)buff);
+}
 
-  if (folder_sectors) {
-    int folders_buff[(folder_sectors * 512) / sizeof(int)];
-    memcopy(folders_buff, f.folders.values, f.folders.count * sizeof(int));
-    write_28bit(MASTER, lba_folders, folder_sectors, (short*)folders_buff);
+void fileder_from_disk_alloc(int lba, Fileder* f) {
+  union f_union {
+    short arr[256];
+    Fileder fileder;
+  } f_header;
+  read_28bit(MASTER, lba, 1, f_header.arr);
+
+  FilederDiskMap map = fileder_map(f_header.fileder);
+
+  char buff[map.n_sectors * 512];
+  read_28bit(MASTER, lba, map.n_sectors, (short*)buff);
+
+  fileder_init_alloc(f, buff + map.name_index, f_header.fileder.parent_lba);
+
+  int* fileders = (int*)(buff + map.fileders_index);
+  for (int i = 0; i < f_header.fileder.fileders.count; i++) {
+    dyn_append(f->fileders, fileders[i]);
   }
 
-  if (file_sectors) {
-    int files_buff[(file_sectors * 512) / sizeof(int)];
-    memcopy(files_buff, f.files.values, f.files.count * sizeof(int));
-    write_28bit(MASTER, lba_files, file_sectors, (short*)files_buff);
-  }
-
-  if (name_sectors) {
-    char name_buff[name_sectors * 512];
-    memcopy(name_buff, f.name.values, f.name.count);
-    write_28bit(MASTER, lba_name, name_sectors, (short*)name_buff);
+  char* content = buff + map.content_index;
+  for (int i = 0; i < f_header.fileder.content.count; i++) {
+    dyn_append(f->content, content[i]);
   }
 }
 
-FileSystemStatus folder_from_disk_alloc(int lba, Folder* f) {
-  FolderUnion f_union;
-  read_28bit(MASTER, lba, 1, f_union.arr);
+void fileder_read_name_alloc(int lba, DynStr* name) {
+  union f_union {
+    short arr[256];
+    Fileder fileder;
+  } f_header;
+  read_28bit(MASTER, lba, 1, f_header.arr);
 
-  int lba_folders = lba + 1;
-  int folder_sectors = (sizeof(int) * f_union.folder.folders.count + 511) / 512;
-  int lba_files = lba_folders + folder_sectors;
-  int file_sectors = (sizeof(int) * f_union.folder.files.count + 511) / 512;
-  int lba_name = lba_files + file_sectors;
-  int name_sectors = (f_union.folder.name.count + 511) / 512;
+  FilederDiskMap map = fileder_map(f_header.fileder);
 
-  if (!name_sectors) {
-    return FS_ERR_NO_NAME;
+  // fileders is the first array after name
+  int n_sectors = (sizeof(Fileder) + map.fileders_index + 511) / 512;
+  char buff[n_sectors * 512];
+
+  read_28bit(MASTER, lba, n_sectors, (short*)buff);
+  char* name_ptr = buff + map.name_index;
+  for (int i = 0; i < f_header.fileder.name.count; i++) {
+    dyn_append((*name), name_ptr[i]);
   }
+}
 
-  char name_buff[name_sectors * 512];
-  read_28bit(MASTER, lba_name, name_sectors, (short*)name_buff);
-  folder_init_alloc(f, name_buff, f_union.folder.parent_lba);
-
-  int folders_buff[(folder_sectors * 512) / sizeof(int)];
-  if (folder_sectors) {
-    read_28bit(MASTER, lba_folders, folder_sectors, (short*)folders_buff);
-    for (int i = 0; i < f_union.folder.folders.count; i++) {
-      dyn_append(f->folders, folders_buff[i]);
+int fileder_find_lba(const char* name) {
+  Fileder f;
+  fileder_from_disk_alloc(current_folder, &f);
+  for (int i = 0; i < f.fileders.count; i++) {
+    DynStr dynname;
+    fileder_read_name_alloc(f.fileders.values[i], &dynname);
+    if (strcmp(name, dynname.values)) {
+      fileder_free(f);
+      kfree(dynname.values);
+      return f.fileders.values[i];
     }
+    kfree(dynname.values);
   }
-
-  int files_buff[(file_sectors * 512) / sizeof(int)];
-  if (file_sectors) {
-    read_28bit(MASTER, lba_files, file_sectors, (short*)files_buff);
-    for (int i = 0; i < f_union.folder.files.count; i++) {
-      dyn_append(f->files, files_buff[i]);
-    }
-  }
-
-  return FS_SUCCESS;
-}
-
-void file_init_alloc(File* f, const char* name, int size, int lba) {
-  f->content_size = size;
-  f->lba = lba;
-  dyn_init(f->name);
-  for (int i = 0; i <= strlen(name); i++) {
-    dyn_append(f->name, name[i]);
-  }
-}
-
-void file_free(File f) {
-  kfree(f.name.values);
-}
-
-int file_n_sectors(File f) {
-  int name_sectors = (f.name.count + 511) / 512;
-  return name_sectors + 1;
-}
-
-// returns sector immediately after file -1 if error
-void file_to_disk(int lba, File f) {
-  int name_sectors = (f.name.count + 511) / 512;
-
-  int lba_name = lba + 1;
-
-  FileUnion f_union;
-  f_union.file = f;
-  write_28bit(MASTER, lba, 1, f_union.arr);
-
-  if (name_sectors) {
-    char name_buff[name_sectors * 512];
-    memcopy(name_buff, f.name.values, f.name.count);
-    write_28bit(MASTER, lba_name, name_sectors, (short*)name_buff);
-  }
-}
-
-FileSystemStatus file_from_disk_alloc(int lba, File* f) {
-  FileUnion f_union;
-  read_28bit(MASTER, lba, 1, f_union.arr);
-  int name_sectors = (f_union.file.name.count + 511) / 512;
-
-  char name_buff[name_sectors * 512];
-  if (!f_union.file.name.count) {
-    return FS_ERR_NO_NAME;
-  }
-  read_28bit(MASTER, lba + 1, name_sectors, (short*)name_buff);
-  file_init_alloc(f, name_buff, f_union.file.content_size, f_union.file.lba);
-  return FS_SUCCESS;
-}
-
-int file_find_lba(const char* name) {
-  Folder folder;
-  folder_from_disk_alloc(current_folder, &folder);
-  for (int i = 0; i < folder.files.count; i++) {
-    File file;
-    file_from_disk_alloc(folder.files.values[i], &file);
-    if (strcmp(name, file.name.values)) {
-      file_free(file);
-      folder_free(folder);
-      return folder.files.values[i];
-    }
-    file_free(file);
-  }
-  folder_free(folder);
+  fileder_free(f);
   return -1;
 }
 
-FileSystemStatus folder_remove_file_lba(const char* name) {
-  Folder folder;
-  folder_from_disk_alloc(current_folder, &folder);
-  for (int i = 0; i < folder.files.count; i++) {
-    File file;
-    file_from_disk_alloc(folder.files.values[i], &file);
-    if (strcmp(name, file.name.values)) {
-      dyn_rm(folder.files, i);
-      folder_to_disk(current_folder, folder);
-      file_free(file);
-      folder_free(folder);
+FileSystemStatus fileder_remove_member(const char* name) {
+  Fileder f;
+  fileder_from_disk_alloc(current_folder, &f);
+  for (int i = 0; i < f.fileders.count; i++) {
+    DynStr dynname;
+    fileder_read_name_alloc(f.fileders.values[i], &dynname);
+    if (strcmp(name, dynname.values)) {
+      dyn_rm(f.fileders, i);
+      fileder_to_disk(current_folder, f);
+      kfree(dynname.values);
+      fileder_free(f);
       return FS_SUCCESS;
     }
-    file_free(file);
+    kfree(dynname.values);
   }
-  folder_free(folder);
+  fileder_free(f);
   return FS_ERR_FILE_NOT_EXIST;
 }
 
 void fs_list() {
   int lba = current_folder;
-  Folder f;
-  folder_from_disk_alloc(lba, &f);
-  for (int i = 0; i < f.folders.count; i++) {
-    Folder fi;
-    folder_from_disk_alloc(f.folders.values[i], &fi);
-    sprintln(fi.name.values);
-    folder_free(fi);
+  Fileder f;
+  fileder_from_disk_alloc(lba, &f);
+  for (int i = 0; i < f.fileders.count; i++) {
+    DynStr name;
+    fileder_read_name_alloc(f.fileders.values[i], &name);
+    sprintln(name.values);
+    kfree(name.values);
   }
-  for (int i = 0; i < f.files.count; i++) {
-    File fi;
-    file_from_disk_alloc(f.files.values[i], &fi);
-    sprintln(fi.name.values);
-    file_free(fi);
-  }
-  folder_free(f);
+  fileder_free(f);
 }
 
-FileSystemStatus fs_create_file(const char* name) {
-  File file;
-  Folder folder;
+FileSystemStatus fs_create_fileder(const char* name) {
+  Fileder child;
+  Fileder parent;
 
-  file_init_alloc(&file, name, 0, 0);
-  unwrap_file_status(folder_from_disk_alloc(current_folder, &folder));
+  fileder_from_disk_alloc(current_folder, &parent);
+  fileder_init_alloc(&child, name, current_folder);
 
-  int file_lba = claim_disk_reigon(file_n_sectors(file));
-  unwrap_int(file_lba, FS_ERR_DISK_FULL);
-  file_to_disk(file_lba, file);
-  file_free(file);
+  int child_lba = claim_disk_reigon(fileder_map(child).n_sectors);
+  unwrap_int(child_lba, FS_ERR_DISK_FULL);
+  fileder_to_disk(child_lba, child);
+  fileder_free(child);
 
-  int folder_sectors_before = folder_n_sectors(folder);
-  dyn_append(folder.files, file_lba);
-  int folder_sectors_after = folder_n_sectors(folder);
-  if (folder_sectors_before < folder_sectors_after) {
-    return_disk_reigon(current_folder, folder_sectors_before);
-    int folder_lba = claim_disk_reigon(folder_sectors_after);
-    unwrap_int(folder_lba, FS_ERR_DISK_FULL);
-    current_folder = folder_lba;
+  int parent_sectors_before = fileder_map(parent).n_sectors;
+  dyn_append(parent.fileders, child_lba);
+  int parent_sectors_after = fileder_map(parent).n_sectors;
+  if (parent_sectors_before < parent_sectors_after) {
+    return_disk_reigon(current_folder, parent_sectors_before);
+    int fileder_lba = claim_disk_reigon(parent_sectors_after);
+    unwrap_int(fileder_lba, FS_ERR_DISK_FULL);
+    current_folder = fileder_lba;
   }
-  folder_to_disk(current_folder, folder);
-  folder_free(folder);
+
+  fileder_to_disk(current_folder, parent);
+  fileder_free(parent);
 
   return FS_SUCCESS;
 }
 
-// if i write to a file twice it complains disk is full
-FileSystemStatus fs_file_write_content(const char* name,
-                                       int content_size,
-                                       const char* content) {
-  int lba_file = file_find_lba(name);
-  unwrap_int(lba_file, FS_ERR_FILE_NOT_EXIST);
-  File f;
-  unwrap_file_status(file_from_disk_alloc(lba_file, &f));
+FileSystemStatus fs_fileder_write_content(const char* name,
+                                          int content_size,
+                                          const char* content) {
+  int lba = fileder_find_lba(name);
+  unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
+  Fileder f;
+  fileder_from_disk_alloc(lba, &f);
 
-  return_disk_reigon(f.lba, (f.content_size + 511) / 512);
-  int content_sectors = (content_size + 511) / 512;
-  int lba_content = claim_disk_reigon(content_sectors);
+  return_disk_reigon(lba, fileder_map(f).n_sectors);
 
-  unwrap_int(lba_content, FS_ERR_DISK_FULL);
-  f.lba = lba_content;
-  f.content_size = content_size;
-  file_to_disk(lba_file, f);
-  write_28bit(MASTER, lba_content, content_sectors, (short*)content);
-  file_free(f);
+  dyn_clear(f.content);
+  for (int i = 0; i < content_size; i++) {
+    dyn_append(f.content, content[i]);
+  }
 
-  return FS_SUCCESS;
-}
+  lba = claim_disk_reigon(fileder_map(f).n_sectors);
+  unwrap_int(lba, FS_ERR_DISK_FULL);
 
-FileSystemStatus fs_file_read_content(const char* name, DynStr* buff) {
-  int lba_file = file_find_lba(name);
-  unwrap_int(lba_file, FS_ERR_FILE_NOT_EXIST);
-
-  File f;
-  unwrap_file_status(file_from_disk_alloc(lba_file, &f));
-
-  int n_sectors = (f.content_size + 511) / 512;
-  dyn_init((*buff), n_sectors * 512);
-  buff->count = f.content_size;
-  read_28bit(MASTER, f.lba, n_sectors, (short*)(buff->values));
-
-  file_free(f);
+  fileder_to_disk(lba, f);
+  fileder_free(f);
 
   return FS_SUCCESS;
 }
 
-FileSystemStatus fs_delete_file(const char* name) {
-  int lba_file = file_find_lba(name);
-  unwrap_int(lba_file, FS_ERR_FILE_NOT_EXIST);
-  File file;
-  unwrap_file_status(file_from_disk_alloc(lba_file, &file));
+FileSystemStatus fs_fileder_read_alloc(const char* name, DynStr* buff) {
+  int lba = fileder_find_lba(name);
+  unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
 
-  int n_header_sectors = file_n_sectors(file);
-  int n_content_sectors = (file.content_size + 511) / 512;
+  Fileder f;
+  fileder_from_disk_alloc(lba, &f);
 
-  return_disk_reigon(lba_file, n_header_sectors);
-  return_disk_reigon(file.lba, n_content_sectors);
+  dyn_init((*buff), f.content.count);
+  buff->count = f.content.count;
+  memcopy(buff->values, f.content.values, f.content.count);
 
-  unwrap_file_status(folder_remove_file_lba(name));
+  fileder_free(f);
 
-  file_free(file);
+  return FS_SUCCESS;
+}
+
+FileSystemStatus fs_delete_fileder(const char* name) {
+  int lba = fileder_find_lba(name);
+  unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
+  Fileder f;
+  fileder_from_disk_alloc(lba, &f);
+
+  int n_sectors = fileder_map(f).n_sectors;
+
+  return_disk_reigon(lba, n_sectors);
+
+  unwrap_file_status(fileder_remove_member(name));
+
+  fileder_free(f);
   return FS_SUCCESS;
 }
 
@@ -372,12 +307,13 @@ FileSystemStatus create_file_system() {
   fdr.next = 0;
   fdr_write(1, fdr);
   FDR_LBA = 1;
-  Folder root;
-  folder_init_alloc(&root, "root", 0);
-  int lba = claim_disk_reigon(folder_n_sectors(root));
+  Fileder root;
+  fileder_init_alloc(&root, "root", 0);
+  int lba = claim_disk_reigon(fileder_map(root).n_sectors);
   current_folder = lba;
   unwrap_int(lba, FS_ERR_DISK_FULL);
-  folder_to_disk(lba, root);
+  fileder_to_disk(lba, root);
+  fileder_free(root);
   return FS_SUCCESS;
 }
 

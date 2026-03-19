@@ -40,4 +40,10 @@
 #define dyn_init(...) \
   _dyn_init_get(__VA_ARGS__, dyn_init_size, dyn_init_default)(__VA_ARGS__)
 
+#define dyn_clear(arr) \
+  do {                 \
+    kfree(arr.values); \
+    dyn_init(arr);     \
+  } while (0)
+
 #endif
