@@ -140,6 +140,9 @@ void parse_cmd(char* cmd) {
   } else if (strcmp(tokens.values[0].values, "df")) {
     fs_report_status(fs_delete_fileder(tokens.values[1].values));
 
+  } else if (strcmp(tokens.values[0].values, "cf")) {
+    fs_report_status(fs_change_fileder(tokens.values[1].values));
+
   } else if (strcmp(cmd, "list")) {
     fs_list();
 

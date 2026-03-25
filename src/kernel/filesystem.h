@@ -50,3 +50,4 @@ FileSystemStatus fs_fileder_write_content(const char* name,
                                           const char* content);
 FileSystemStatus fs_fileder_read_alloc(const char* name, DynStr* buff);
 FileSystemStatus fs_delete_fileder(const char* name);
+FileSystemStatus fs_change_fileder(const char* name);

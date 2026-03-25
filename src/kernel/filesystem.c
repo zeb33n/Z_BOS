@@ -326,6 +326,13 @@ FileSystemStatus fs_delete_fileder(const char* name) {
   return FS_SUCCESS;
 }
 
+FileSystemStatus fs_change_fileder(const char* name) {
+  int lba = fileder_find_lba(name);
+  unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
+  current_folder = lba;
+  return FS_SUCCESS;
+}
+
 FileSystemStatus create_file_system() {
   FreeDiskReigon fdr;
   fdr.lba_ptr = 2;
