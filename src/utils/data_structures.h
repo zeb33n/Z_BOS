@@ -21,10 +21,10 @@
     arr.values = kmalloc(arr.capacity * sizeof(*arr.values)); \
   } while (0)
 
-#define dyn_init_size(arr, size)                              \
+#define dyn_init_N(arr, N)                                    \
   do {                                                        \
     arr.count = 0;                                            \
-    arr.capacity = size;                                      \
+    arr.capacity = N;                                         \
     arr.values = kmalloc(arr.capacity * sizeof(*arr.values)); \
   } while (0)
 
@@ -38,12 +38,18 @@
 
 #define _dyn_init_get(_1, _2, NAME, ...) NAME
 #define dyn_init(...) \
-  _dyn_init_get(__VA_ARGS__, dyn_init_size, dyn_init_default)(__VA_ARGS__)
+  _dyn_init_get(__VA_ARGS__, dyn_init_N, dyn_init_default)(__VA_ARGS__)
 
 #define dyn_clear(arr) \
   do {                 \
     kfree(arr.values); \
     dyn_init(arr);     \
+  } while (0)
+
+#define dyn_copy_from(arr, N, buff)                     \
+  do {                                                  \
+    arr.count = N;                                      \
+    memcopy(arr.values, buff, N * sizeof(*arr.values)); \
   } while (0)
 
 #endif

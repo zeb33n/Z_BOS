@@ -137,14 +137,10 @@ void fileder_from_disk_alloc(int lba, Fileder* f) {
   fileder_init_alloc(f, buff + map.name_index, f_header.fileder.parent_lba);
 
   int* fileders = (int*)(buff + map.fileders_index);
-  for (int i = 0; i < f_header.fileder.fileders.count; i++) {
-    dyn_append(f->fileders, fileders[i]);
-  }
+  dyn_copy_from(f->fileders, f_header.fileder.fileders.count, fileders);
 
   char* content = buff + map.content_index;
-  for (int i = 0; i < f_header.fileder.content.count; i++) {
-    dyn_append(f->content, content[i]);
-  }
+  dyn_copy_from(f->content, f_header.fileder.content.count, content);
 }
 
 void fileder_read_name_alloc(int lba, DynStr* name) {
@@ -163,9 +159,7 @@ void fileder_read_name_alloc(int lba, DynStr* name) {
   read_28bit(MASTER, lba, n_sectors, (short*)buff);
   char* name_ptr = buff + map.name_index;
   dyn_init((*name));
-  for (int i = 0; i < f_header.fileder.name.count; i++) {
-    dyn_append((*name), name_ptr[i]);
-  }
+  dyn_copy_from((*name), f_header.fileder.name.count, name_ptr);
 }
 
 int fileder_find_lba(const char* name) {
@@ -275,9 +269,7 @@ FileSystemStatus fs_fileder_write_content(const char* name,
   int sectors_before = fileder_map(f).n_sectors;
 
   dyn_clear(f.content);
-  for (int i = 0; i < content_size; i++) {
-    dyn_append(f.content, content[i]);
-  }
+  dyn_copy_from(f.content, content_size, (char*)content);
 
   int sectors_after = fileder_map(f).n_sectors;
 
@@ -301,9 +293,8 @@ FileSystemStatus fs_fileder_read_alloc(const char* name, DynStr* buff) {
   Fileder f;
   fileder_from_disk_alloc(lba, &f);
 
-  dyn_init((*buff), f.content.count);
-  buff->count = f.content.count;
-  memcopy(buff->values, f.content.values, f.content.count);
+  dyn_init((*buff));
+  dyn_copy_from((*buff), f.content.count, f.content.values);
 
   fileder_free(f);
 
