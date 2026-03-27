@@ -9,9 +9,15 @@
 #include "../utils/types.h"
 #include "filesystem.h"
 
+#define MAX_OPEN_FILEDERS 64
+
 int FDR_LBA;
 
-int current_folder;
+int CURRENT_FILEDER;
+
+int OPEN_FILEDER_PTR;
+
+int OPEN_FILEDERS[MAX_OPEN_FILEDERS];
 
 void fs_report_status(FileSystemStatus status) {
   switch (status) {
@@ -164,7 +170,7 @@ void fileder_read_name_alloc(int lba, DynStr* name) {
 
 int fileder_find_lba(const char* name) {
   Fileder f;
-  fileder_from_disk_alloc(current_folder, &f);
+  fileder_from_disk_alloc(CURRENT_FILEDER, &f);
   for (int i = 0; i < f.fileders.count; i++) {
     DynStr dynname;
     fileder_read_name_alloc(f.fileders.values[i], &dynname);
@@ -181,13 +187,13 @@ int fileder_find_lba(const char* name) {
 
 FileSystemStatus fileder_update_lba(const char* name, int lba) {
   Fileder f;
-  fileder_from_disk_alloc(current_folder, &f);
+  fileder_from_disk_alloc(CURRENT_FILEDER, &f);
   for (int i = 0; i < f.fileders.count; i++) {
     DynStr dynname;
     fileder_read_name_alloc(f.fileders.values[i], &dynname);
     if (strcmp(name, dynname.values)) {
       f.fileders.values[i] = lba;
-      fileder_to_disk(current_folder, f);
+      fileder_to_disk(CURRENT_FILEDER, f);
       fileder_free(f);
       kfree(dynname.values);
       return FS_SUCCESS;
@@ -200,13 +206,13 @@ FileSystemStatus fileder_update_lba(const char* name, int lba) {
 
 FileSystemStatus fileder_remove_member(const char* name) {
   Fileder f;
-  fileder_from_disk_alloc(current_folder, &f);
+  fileder_from_disk_alloc(CURRENT_FILEDER, &f);
   for (int i = 0; i < f.fileders.count; i++) {
     DynStr dynname;
     fileder_read_name_alloc(f.fileders.values[i], &dynname);
     if (strcmp(name, dynname.values)) {
       dyn_rm(f.fileders, i);
-      fileder_to_disk(current_folder, f);
+      fileder_to_disk(CURRENT_FILEDER, f);
       kfree(dynname.values);
       fileder_free(f);
       return FS_SUCCESS;
@@ -218,7 +224,7 @@ FileSystemStatus fileder_remove_member(const char* name) {
 }
 
 void fs_list() {
-  int lba = current_folder;
+  int lba = CURRENT_FILEDER;
   Fileder f;
   fileder_from_disk_alloc(lba, &f);
   for (int i = 0; i < f.fileders.count; i++) {
@@ -234,8 +240,8 @@ FileSystemStatus fs_create_fileder(const char* name) {
   Fileder child;
   Fileder parent;
 
-  fileder_from_disk_alloc(current_folder, &parent);
-  fileder_init_alloc(&child, name, current_folder);
+  fileder_from_disk_alloc(CURRENT_FILEDER, &parent);
+  fileder_init_alloc(&child, name, CURRENT_FILEDER);
 
   int child_lba = claim_disk_reigon(fileder_map(child).n_sectors);
   unwrap_int(child_lba, FS_ERR_DISK_FULL);
@@ -246,16 +252,27 @@ FileSystemStatus fs_create_fileder(const char* name) {
   dyn_append(parent.fileders, child_lba);
   int parent_sectors_after = fileder_map(parent).n_sectors;
   if (parent_sectors_before < parent_sectors_after) {
-    return_disk_reigon(current_folder, parent_sectors_before);
+    return_disk_reigon(CURRENT_FILEDER, parent_sectors_before);
     int fileder_lba = claim_disk_reigon(parent_sectors_after);
     unwrap_int(fileder_lba, FS_ERR_DISK_FULL);
-    current_folder = fileder_lba;
+    CURRENT_FILEDER = fileder_lba;
   }
 
-  fileder_to_disk(current_folder, parent);
+  fileder_to_disk(CURRENT_FILEDER, parent);
   fileder_free(parent);
 
   return FS_SUCCESS;
+}
+
+int fs_open_fileder(const char* name) {
+  if (OPEN_FILEDER_PTR++ >= MAX_OPEN_FILEDERS) {
+    OPEN_FILEDER_PTR--;
+    return -1;
+  }
+  int lba = fileder_find_lba(name);
+  unwrap_int(lba, -1);
+  fileder_from_disk_alloc(lba, (Fileder*)(OPEN_FILEDERS + OPEN_FILEDER_PTR));
+  return OPEN_FILEDER_PTR;
 }
 
 FileSystemStatus fs_fileder_write_content(const char* name,
@@ -320,7 +337,7 @@ FileSystemStatus fs_delete_fileder(const char* name) {
 FileSystemStatus fs_change_fileder(const char* name) {
   int lba = fileder_find_lba(name);
   unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
-  current_folder = lba;
+  CURRENT_FILEDER = lba;
   return FS_SUCCESS;
 }
 
@@ -334,7 +351,7 @@ FileSystemStatus create_file_system() {
   Fileder root;
   fileder_init_alloc(&root, "root", 0);
   int lba = claim_disk_reigon(fileder_map(root).n_sectors);
-  current_folder = lba;
+  CURRENT_FILEDER = lba;
   unwrap_int(lba, FS_ERR_DISK_FULL);
   fileder_to_disk(lba, root);
   fileder_free(root);
