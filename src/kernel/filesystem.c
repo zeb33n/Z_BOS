@@ -264,6 +264,11 @@ FileSystemStatus fs_create_fileder(const char* name) {
   return FS_SUCCESS;
 }
 
+// TODO change api so that
+// open file -> read file to memory into open_fileders table
+// close file -> write file to disk, free memory
+// file operations on openfile
+// see below !
 int fs_open_fileder(const char* name) {
   if (OPEN_FILEDER_PTR++ >= MAX_OPEN_FILEDERS) {
     OPEN_FILEDER_PTR--;
