@@ -46,10 +46,13 @@
     dyn_init(arr);     \
   } while (0)
 
-#define dyn_copy_from(arr, N, buff)                     \
-  do {                                                  \
-    arr.count = N;                                      \
-    memcopy(arr.values, buff, N * sizeof(*arr.values)); \
+#define dyn_copy_from(arr, N, buff)                               \
+  do {                                                            \
+    if (N > arr.capacity) {                                       \
+      arr.values = krealloc(arr.values, N * sizeof(*arr.values)); \
+    }                                                             \
+    arr.count = N;                                                \
+    memcopy(arr.values, buff, N * sizeof(*arr.values));           \
   } while (0)
 
 #endif

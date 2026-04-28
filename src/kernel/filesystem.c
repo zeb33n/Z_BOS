@@ -11,13 +11,13 @@
 
 #define MAX_OPEN_FILEDERS 64
 
+#define NULL_LBA -1
+
 int FDR_LBA;
 
 int CURRENT_FILEDER;
 
-int OPEN_FILEDER_PTR;
-
-int OPEN_FILEDERS[MAX_OPEN_FILEDERS];
+Fileder* OPEN_FILEDERS[MAX_OPEN_FILEDERS];
 
 void fs_report_status(FileSystemStatus status) {
   switch (status) {
@@ -29,6 +29,10 @@ void fs_report_status(FileSystemStatus status) {
       return sprintlnc("NO NAME", BACKGROUND, RED);
     case FS_ERR_FILE_NOT_EXIST:
       return sprintlnc("FILEDER DOES NOT EXIST", BACKGROUND, RED);
+    case FS_ERR_BAD_DESCRIPTOR:
+      return sprintlnc("BAD FILEDER DESCRIPTOR", BACKGROUND, RED);
+    case FS_ERR_MAX_OPEN_FILES:
+      return sprintlnc("MAXIMUM NUMBER OF FILES OPEN", BACKGROUND, RED);
     case FS_SUCCESS:
       return;
   }
@@ -89,8 +93,14 @@ void return_disk_reigon(int lba_free, int n_sectors) {
   FDR_LBA = lba_fdr;
 }
 
-void fileder_init_alloc(Fileder* f, const char* name, int parent_lba) {
+void fileder_init_alloc(Fileder* f,
+                        const char* name,
+                        int parent_lba,
+                        int lba,
+                        int n_sectors) {
   f->parent_lba = parent_lba;
+  f->lba = lba;
+  f->n_sectors = n_sectors;
   dyn_init(f->fileders);
   dyn_init(f->name);
   dyn_init(f->content);
@@ -115,7 +125,7 @@ FilederDiskMap fileder_map(Fileder f) {
   return map;
 }
 
-void fileder_to_disk(int lba, Fileder f) {
+void fileder_to_disk(Fileder f) {
   FilederDiskMap map = fileder_map(f);
 
   char buff[map.n_sectors * 512];
@@ -125,7 +135,7 @@ void fileder_to_disk(int lba, Fileder f) {
           f.fileders.count * sizeof(int));
   memcopy(buff + map.content_index, f.content.values, f.content.count);
 
-  write_28bit(MASTER, lba, map.n_sectors, (short*)buff);
+  write_28bit(MASTER, f.lba, map.n_sectors, (short*)buff);
 }
 
 void fileder_from_disk_alloc(int lba, Fileder* f) {
@@ -140,7 +150,8 @@ void fileder_from_disk_alloc(int lba, Fileder* f) {
   char buff[map.n_sectors * 512];
   read_28bit(MASTER, lba, map.n_sectors, (short*)buff);
 
-  fileder_init_alloc(f, buff + map.name_index, f_header.fileder.parent_lba);
+  fileder_init_alloc(f, buff + map.name_index, f_header.fileder.parent_lba,
+                     f_header.fileder.lba, f_header.fileder.n_sectors);
 
   int* fileders = (int*)(buff + map.fileders_index);
   dyn_copy_from(f->fileders, f_header.fileder.fileders.count, fileders);
@@ -185,166 +196,87 @@ int fileder_find_lba(const char* name) {
   return -1;
 }
 
-FileSystemStatus fileder_update_lba(const char* name, int lba) {
-  Fileder f;
-  fileder_from_disk_alloc(CURRENT_FILEDER, &f);
-  for (int i = 0; i < f.fileders.count; i++) {
-    DynStr dynname;
-    fileder_read_name_alloc(f.fileders.values[i], &dynname);
-    if (strcmp(name, dynname.values)) {
-      f.fileders.values[i] = lba;
-      fileder_to_disk(CURRENT_FILEDER, f);
-      fileder_free(f);
-      kfree(dynname.values);
+FileSystemStatus fileder_update_lba(int lba, Fileder* f) {
+  Fileder* p = OPEN_FILEDERS[CURRENT_FILEDER];
+  if (p == NULL) {
+    return FS_ERR_BAD_DESCRIPTOR;
+  }
+  for (int i = 0; i < p->fileders.count; i++) {
+    if (p->fileders.values[i] == f->lba) {
+      p->fileders.values[i] = lba;
+      fs_fileder_save(CURRENT_FILEDER);
       return FS_SUCCESS;
     }
-    kfree(dynname.values);
   }
-  fileder_free(f);
   return FS_ERR_FILE_NOT_EXIST;
 }
 
-FileSystemStatus fileder_remove_member(const char* name) {
-  Fileder f;
-  fileder_from_disk_alloc(CURRENT_FILEDER, &f);
-  for (int i = 0; i < f.fileders.count; i++) {
-    DynStr dynname;
-    fileder_read_name_alloc(f.fileders.values[i], &dynname);
-    if (strcmp(name, dynname.values)) {
-      dyn_rm(f.fileders, i);
-      fileder_to_disk(CURRENT_FILEDER, f);
-      kfree(dynname.values);
-      fileder_free(f);
-      return FS_SUCCESS;
+// need some kind of lock so we cant open the same file twice
+int fs_fileder_open(int lba) {
+  for (int i = 0; i < MAX_OPEN_FILEDERS; i++) {
+    if (OPEN_FILEDERS[i] == NULL) {
+      fileder_from_disk_alloc(lba, OPEN_FILEDERS[i]);
+      return i;
     }
-    kfree(dynname.values);
   }
-  fileder_free(f);
-  return FS_ERR_FILE_NOT_EXIST;
+  return -1;
 }
 
-void fs_list() {
-  int lba = CURRENT_FILEDER;
-  Fileder f;
-  fileder_from_disk_alloc(lba, &f);
-  for (int i = 0; i < f.fileders.count; i++) {
-    DynStr name;
-    fileder_read_name_alloc(f.fileders.values[i], &name);
-    sprintln(name.values);
-    kfree(name.values);
+FileSystemStatus fs_fileder_close(int descriptor) {
+  Fileder* f = OPEN_FILEDERS[descriptor];
+  if (f == NULL) {
+    return FS_ERR_BAD_DESCRIPTOR;
   }
-  fileder_free(f);
-}
-
-FileSystemStatus fs_create_fileder(const char* name) {
-  Fileder child;
-  Fileder parent;
-
-  fileder_from_disk_alloc(CURRENT_FILEDER, &parent);
-  fileder_init_alloc(&child, name, CURRENT_FILEDER);
-
-  int child_lba = claim_disk_reigon(fileder_map(child).n_sectors);
-  unwrap_int(child_lba, FS_ERR_DISK_FULL);
-  fileder_to_disk(child_lba, child);
-  fileder_free(child);
-
-  int parent_sectors_before = fileder_map(parent).n_sectors;
-  dyn_append(parent.fileders, child_lba);
-  int parent_sectors_after = fileder_map(parent).n_sectors;
-  if (parent_sectors_before < parent_sectors_after) {
-    return_disk_reigon(CURRENT_FILEDER, parent_sectors_before);
-    int fileder_lba = claim_disk_reigon(parent_sectors_after);
-    unwrap_int(fileder_lba, FS_ERR_DISK_FULL);
-    CURRENT_FILEDER = fileder_lba;
-  }
-
-  fileder_to_disk(CURRENT_FILEDER, parent);
-  fileder_free(parent);
-
-  return FS_SUCCESS;
-}
-
-// TODO change api so that
-// open file -> read file to memory into open_fileders table
-// close file -> write file to disk, free memory
-// file operations on openfile
-// see below !
-int fs_open_fileder(const char* name) {
-  if (OPEN_FILEDER_PTR++ >= MAX_OPEN_FILEDERS) {
-    OPEN_FILEDER_PTR--;
-    return -1;
-  }
-  int lba = fileder_find_lba(name);
-  unwrap_int(lba, -1);
-  fileder_from_disk_alloc(lba, (Fileder*)(OPEN_FILEDERS + OPEN_FILEDER_PTR));
-  return OPEN_FILEDER_PTR;
-}
-
-FileSystemStatus fs_fileder_write_content(const char* name,
-                                          int content_size,
-                                          const char* content) {
-  int lba = fileder_find_lba(name);
-  unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
-  Fileder f;
-  fileder_from_disk_alloc(lba, &f);
-
-  int sectors_before = fileder_map(f).n_sectors;
-
-  dyn_clear(f.content);
-  dyn_copy_from(f.content, content_size, (char*)content);
-
-  int sectors_after = fileder_map(f).n_sectors;
-
-  if (sectors_before < sectors_after) {
-    return_disk_reigon(lba, sectors_before);
-    int lba = claim_disk_reigon(sectors_after);
+  FilederDiskMap f_map = fileder_map(*f);
+  if (f_map.n_sectors > f->n_sectors) {
+    return_disk_reigon(f->lba, f->n_sectors);
+    int lba = claim_disk_reigon(f_map.n_sectors);
     unwrap_int(lba, FS_ERR_DISK_FULL);
-    fileder_update_lba(name, lba);
+    FileSystemStatus status = fileder_update_lba(lba, f);
+    unwrap_file_status(status);
   }
-
-  fileder_to_disk(lba, f);
-  fileder_free(f);
-
+  fileder_to_disk(*f);
+  fileder_free(*f);
+  OPEN_FILEDERS[descriptor] = NULL;
   return FS_SUCCESS;
 }
 
-FileSystemStatus fs_fileder_read_alloc(const char* name, DynStr* buff) {
-  int lba = fileder_find_lba(name);
-  unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
-
-  Fileder f;
-  fileder_from_disk_alloc(lba, &f);
-
-  dyn_init((*buff));
-  dyn_copy_from((*buff), f.content.count, f.content.values);
-
-  fileder_free(f);
-
+FileSystemStatus fs_fileder_save(int descriptor) {
+  Fileder* f = OPEN_FILEDERS[descriptor];
+  if (f == NULL) {
+    return FS_ERR_BAD_DESCRIPTOR;
+  }
+  FilederDiskMap f_map = fileder_map(*f);
+  if (f_map.n_sectors > f->n_sectors) {
+    return_disk_reigon(f->lba, f->n_sectors);
+    int lba = claim_disk_reigon(f_map.n_sectors);
+    unwrap_int(lba, FS_ERR_DISK_FULL);
+    FileSystemStatus status = fileder_update_lba(lba, f);
+    unwrap_file_status(status);
+  }
+  fileder_to_disk(*f);
   return FS_SUCCESS;
 }
 
-FileSystemStatus fs_delete_fileder(const char* name) {
-  int lba = fileder_find_lba(name);
-  unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
-  Fileder f;
-  fileder_from_disk_alloc(lba, &f);
-
-  int n_sectors = fileder_map(f).n_sectors;
-
-  return_disk_reigon(lba, n_sectors);
-
-  unwrap_file_status(fileder_remove_member(name));
-
-  fileder_free(f);
+FileSystemStatus fs_fileder_create(const char* name) {
+  Fileder* f;
+  Fileder* p = OPEN_FILEDERS[CURRENT_FILEDER];
+  if (p == NULL) {
+    return FS_ERR_BAD_DESCRIPTOR;
+  }
+  fileder_init_alloc(f, name, OPEN_FILEDERS[CURRENT_FILEDER]->lba, -1, -1);
+  FilederDiskMap f_map = fileder_map(*f);
+  f->n_sectors = f_map.n_sectors;
+  int lba = claim_disk_reigon(f->n_sectors);
+  unwrap_int(lba, FS_ERR_DISK_FULL);
+  f->lba = lba;
+  dyn_append(OPEN_FILEDERS[CURRENT_FILEDER]->fileders, lba);
+  fileder_to_disk(*f);
+  fileder_free(*f);
   return FS_SUCCESS;
 }
 
-FileSystemStatus fs_change_fileder(const char* name) {
-  int lba = fileder_find_lba(name);
-  unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
-  CURRENT_FILEDER = lba;
-  return FS_SUCCESS;
-}
+// TODO test with list before you do any more coding mate
 
 FileSystemStatus create_file_system() {
   FreeDiskReigon fdr;
@@ -365,9 +297,13 @@ FileSystemStatus create_file_system() {
 }
 
 void boot_file_system() {
-  // current_folder = 2;
+  CURRENT_FILEDER = 2;
+  for (int i = 0; i < MAX_OPEN_FILEDERS; i++) {
+    OPEN_FILEDERS[i] = NULL;
+  }
 }
 
+// TODO Check that first file is called root if not create a filesystem
 void init_file_system() {
   create_file_system();
   boot_file_system();
