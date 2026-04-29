@@ -3,6 +3,7 @@
 #include "../drivers/printing.h"
 #include "../shell/shell.h"
 #include "../utils/memory.h"
+#include "../utils/strings.h"
 #include "../utils/timer.h"
 #include "filesystem.h"
 #include "idt.h"
@@ -46,7 +47,14 @@ extern int _start() {
   run_tests();
 #endif
 
-  init_file_system();
+  FileSystemStatus fs_status = init_file_system();
+  if (fs_status != FS_SUCCESS) {
+    fs_report_status(fs_status);
+  }
+
+  DynStr out;
+  fs_report_status(fs_list_fileders_alloc(&out));
+  sprintln(out.values);
 
   shell_init();
   for (;;) {

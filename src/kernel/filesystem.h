@@ -17,6 +17,12 @@ typedef struct {
   int* values;
 } DynIntArr;
 
+typedef struct {
+  int count;
+  int capacity;
+  char** values;
+} DynCharPtrArr;
+
 typedef struct FreeDiskReigon {
   int lba_ptr;
   int n_sectors;
@@ -45,7 +51,9 @@ typedef struct {
   int n_sectors;
 } FilederDiskMap;
 
-void init_file_system();
+FileSystemStatus init_file_system();
+void fs_report_status(FileSystemStatus status);
 int fs_fileder_open(int lba);
 FileSystemStatus fs_fileder_close(int descriptor);
 FileSystemStatus fs_fileder_save(int descriptor);
+FileSystemStatus fs_list_fileders_alloc(DynStr* out);

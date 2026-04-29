@@ -1,1 +1,1 @@
-#define NULL ((void*)0)
+#define NULL ((void*)0x0)
