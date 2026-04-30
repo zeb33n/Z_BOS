@@ -13,9 +13,9 @@
 
 #define NULL_LBA -1
 
-int FDR_LBA;
+#define ROOT_LBA 2
 
-int CURRENT_FILEDER;
+int FDR_LBA;
 
 Fileder* OPEN_FILEDERS[MAX_OPEN_FILEDERS];
 
@@ -172,22 +172,50 @@ Fileder* fileder_from_disk_alloc(int lba) {
 }
 
 FileSystemStatus fileder_update_lba(int lba, Fileder* f) {
-  Fileder* p = OPEN_FILEDERS[CURRENT_FILEDER];
-  if (p == NULL) {
-    return FS_ERR_BAD_DESCRIPTOR;
-  }
+  Fileder* p = fileder_from_disk_alloc(f->parent_lba);
   for (int i = 0; i < p->fileders.count; i++) {
     if (p->fileders.values[i] == f->lba) {
       p->fileders.values[i] = lba;
-      fs_fileder_save(CURRENT_FILEDER);
+      fileder_to_disk(*p);
+      fileder_free(p);
       return FS_SUCCESS;
     }
   }
+  fileder_free(p);
   return FS_ERR_FILE_NOT_EXIST;
 }
 
+// TODO this is totaly borked FIXIT!
+int fileder_lba_from_path(const char* path) {
+  int lba = ROOT_LBA;
+  if (strcmp(path, "") || strcmp(path, "root")) {
+    return lba;
+  }
+  DynStrArr path_parts = *strsplit_alloc(path);
+  Fileder* f = fileder_from_disk_alloc(lba);
+  int i = 0;
+  for (int j = 0; j < f->fileders.count; j++) {
+    Fileder* c = fileder_from_disk_alloc(f->fileders.values[j]);
+    if (!strcmp(path_parts.values[i].values, c->name.values)) {
+      fileder_free(c);
+      continue;
+    }
+    i++;
+    j = 0;
+    c = fileder_from_disk_alloc(f->fileders.values[j]);
+    fileder_free(f);
+    f = c;
+  }
+}
+
 // need some kind of lock so we cant open the same file twice
-int fs_fileder_open(int lba) {
+// TODO i dont think this should take lbas as an argument
+// it should take a name instead
+// lets do proper paths.
+int fs_fileder_open(const char* name) {
+  int lba = fileder_lba_from_path(name);
+  unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
+
   for (int i = 0; i < MAX_OPEN_FILEDERS; i++) {
     if (OPEN_FILEDERS[i] == NULL) {
       OPEN_FILEDERS[i] = fileder_from_disk_alloc(lba);
@@ -231,8 +259,8 @@ FileSystemStatus fs_fileder_save(int descriptor) {
   return FS_SUCCESS;
 }
 
-FileSystemStatus fs_fileder_create(const char* name) {
-  Fileder* p = OPEN_FILEDERS[CURRENT_FILEDER];
+FileSystemStatus fs_fileder_create(int descriptor, const char* name) {
+  Fileder* p = OPEN_FILEDERS[descriptor];
   unwrap_null(p, FS_ERR_BAD_DESCRIPTOR);
 
   Fileder* f = fileder_init_alloc(name, p->lba, -1, -1);
@@ -242,7 +270,7 @@ FileSystemStatus fs_fileder_create(const char* name) {
   int lba = claim_disk_reigon(f->n_sectors);
   unwrap_int(lba, FS_ERR_DISK_FULL);
   f->lba = lba;
-  dyn_append(OPEN_FILEDERS[CURRENT_FILEDER]->fileders, lba);
+  dyn_append(p->fileders, lba);
   fileder_to_disk(*f);
   fileder_free(f);
   return FS_SUCCESS;
@@ -256,8 +284,9 @@ FileSystemStatus fs_get_name_alloc(int descriptor, DynStr* s) {
   return FS_SUCCESS;
 }
 
-FileSystemStatus fs_list_fileders_alloc(DynStr* out) {
-  Fileder* p = OPEN_FILEDERS[CURRENT_FILEDER];
+// TODO rewrite this to not use open!
+FileSystemStatus fs_fileders_list_alloc(int descriptor, DynStr* out) {
+  Fileder* p = OPEN_FILEDERS[descriptor];
   unwrap_null(p, FS_ERR_BAD_DESCRIPTOR);
   dyn_init((*out));
   for (int i = 0; i < p->fileders.count; i++) {
@@ -265,10 +294,10 @@ FileSystemStatus fs_list_fileders_alloc(DynStr* out) {
     unwrap_int(descriptor, FS_ERR_FILE_NOT_EXIST);
     DynStr name;
     unwrap_file_status(fs_get_name_alloc(descriptor, &name));
-    for (int j = 0; j < name.count; j++) {
+    for (int j = 0; j < name.count - 1; j++) {
       dyn_append((*out), name.values[j]);
     }
-    dyn_append((*out), ',');
+    dyn_append((*out), '\n');
     kfree(name.values);
     fs_fileder_close(descriptor);
   }
@@ -301,11 +330,7 @@ FileSystemStatus boot_file_system() {
   for (int i = 0; i < MAX_OPEN_FILEDERS; i++) {
     OPEN_FILEDERS[i] = NULL;
   }
-  int descriptor = fs_fileder_open(2);
-  unwrap_int(descriptor, FS_ERR_BAD_DESCRIPTOR);
-  CURRENT_FILEDER = descriptor;
 
-  fs_fileder_create("nimrod");
   return FS_SUCCESS;
 }
 

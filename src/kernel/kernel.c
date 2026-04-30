@@ -43,18 +43,14 @@ extern int _start() {
 
   sprintln(WELCOMEMSG);
 
-#ifdef TEST
-  run_tests();
-#endif
+  // #ifdef TEST
+  //   run_tests();
+  // #endif
 
-  FileSystemStatus fs_status = init_file_system();
-  if (fs_status != FS_SUCCESS) {
-    fs_report_status(fs_status);
-  }
-
-  DynStr out;
-  fs_report_status(fs_list_fileders_alloc(&out));
-  sprintln(out.values);
+  //   FileSystemStatus fs_status = init_file_system();
+  //   if (fs_status != FS_SUCCESS) {
+  //     fs_report_status(fs_status);
+  //   }
 
   shell_init();
   for (;;) {

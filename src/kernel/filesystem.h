@@ -53,7 +53,7 @@ typedef struct {
 
 FileSystemStatus init_file_system();
 void fs_report_status(FileSystemStatus status);
-int fs_fileder_open(int lba);
+int fs_fileder_open(const char* name);
 FileSystemStatus fs_fileder_close(int descriptor);
 FileSystemStatus fs_fileder_save(int descriptor);
-FileSystemStatus fs_list_fileders_alloc(DynStr* out);
+FileSystemStatus fs_fileders_list_alloc(int descriptor, DynStr* out);
