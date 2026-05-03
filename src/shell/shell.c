@@ -123,22 +123,25 @@ void parse_cmd(char* cmd) {
     }
     sleep(millis);
 
-  } else if (strcmp(tokens.values[0].values, "newfile")) {
-    fs_report_status(fs_create_file(tokens.values[1].values));
+  } else if (strcmp(tokens.values[0].values, "nf")) {
+    fs_report_status(fs_create_fileder(tokens.values[1].values));
 
-  } else if (strcmp(tokens.values[0].values, "writefile")) {
-    fs_report_status(fs_file_write_content(tokens.values[1].values,
-                                           tokens.values[1].count,
-                                           tokens.values[2].values));
+  } else if (strcmp(tokens.values[0].values, "wf")) {
+    fs_report_status(fs_fileder_write_content(tokens.values[1].values,
+                                              tokens.values[2].count,
+                                              tokens.values[2].values));
 
-  } else if (strcmp(tokens.values[0].values, "readfile")) {
+  } else if (strcmp(tokens.values[0].values, "rf")) {
     DynStr buff;
-    fs_report_status(fs_file_read_content(tokens.values[1].values, &buff));
+    fs_report_status(fs_fileder_read_alloc(tokens.values[1].values, &buff));
     sprintln(buff.values);
     kfree(buff.values);
 
-  } else if (strcmp(tokens.values[0].values, "rmfile")) {
-    fs_report_status(fs_delete_file(tokens.values[1].values));
+  } else if (strcmp(tokens.values[0].values, "df")) {
+    fs_report_status(fs_delete_fileder(tokens.values[1].values));
+
+  } else if (strcmp(tokens.values[0].values, "cf")) {
+    fs_report_status(fs_change_fileder(tokens.values[1].values));
 
   } else if (strcmp(cmd, "list")) {
     fs_list();
