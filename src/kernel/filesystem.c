@@ -9,6 +9,8 @@
 #include "../utils/types.h"
 #include "filesystem.h"
 
+#define META_LBA 41
+
 #define MAX_OPEN_FILEDERS 64
 
 int FDR_LBA;
@@ -94,6 +96,11 @@ void return_disk_reigon(int lba_free, int n_sectors) {
   int lba_fdr = claim_disk_reigon(1);
   fdr_write(lba_fdr, fdr);
   FDR_LBA = lba_fdr;
+
+  FileSystemMetaUnion meta;
+  read_28bit(MASTER, META_LBA, 1, meta.arr);
+  meta.meta.fdr_lba = FDR_LBA;
+  write_28bit(MASTER, META_LBA, 1, meta.arr);
 }
 
 Fileder* fileder_init_alloc(const char* name, int parent_lba) {
@@ -336,27 +343,47 @@ FileSystemStatus fs_change_fileder(const char* name) {
 }
 
 FileSystemStatus create_file_system() {
+  FDR_LBA = 42;
+  CURRENT_FILEDER = 43;
+
   FreeDiskReigon fdr;
-  fdr.lba_ptr = 2;
+  fdr.lba_ptr = CURRENT_FILEDER;
   fdr.n_sectors = disk_info.sectors28;
   fdr.next = 0;
-  fdr_write(1, fdr);
-  FDR_LBA = 1;
+  fdr_write(FDR_LBA, fdr);
   Fileder* root = fileder_init_alloc("root", 0);
   int lba = claim_disk_reigon(fileder_map(*root).n_sectors);
-  CURRENT_FILEDER = lba;
-  unwrap_int(lba, FS_ERR_DISK_FULL);
+  if (lba != CURRENT_FILEDER) {
+    return FS_ERR_CORRUPT_DISK;
+  }
   fileder_to_disk(lba, *root);
   fileder_free(root);
+
+  FileSystemMetaUnion meta;
+  meta.meta.fdr_lba = FDR_LBA;
+  meta.meta.root_lba = CURRENT_FILEDER;
+  meta.meta.check = 0xF8;
+  write_28bit(MASTER, META_LBA, 1, meta.arr);
 
   return FS_SUCCESS;
 }
 
-void boot_file_system() {
-  // current_folder = 2;
+FileSystemStatus boot_file_system() {
+  FileSystemMetaUnion meta;
+  read_28bit(MASTER, META_LBA, 1, meta.arr);
+  if (meta.meta.check != 0xF8) {
+    return FS_ERR_CORRUPT_DISK;
+  }
+  CURRENT_FILEDER = meta.meta.root_lba;
+  FDR_LBA = meta.meta.fdr_lba;
+  return FS_SUCCESS;
 }
 
-void init_file_system() {
-  create_file_system();
-  boot_file_system();
+FileSystemStatus init_file_system() {
+  if (boot_file_system() == FS_ERR_CORRUPT_DISK) {
+    sprintln("Creating FileSystem");
+    unwrap_file_status(create_file_system());
+    return boot_file_system();
+  }
+  return FS_SUCCESS;
 }

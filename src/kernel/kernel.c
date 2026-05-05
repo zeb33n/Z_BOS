@@ -46,7 +46,7 @@ extern int _start() {
   run_tests();
 #endif
 
-  init_file_system();
+  fs_report_status(init_file_system());
 
   shell_init();
   for (;;) {

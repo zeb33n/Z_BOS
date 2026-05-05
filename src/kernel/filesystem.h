@@ -41,7 +41,18 @@ typedef struct {
   int n_sectors;
 } FilederDiskMap;
 
-void init_file_system();
+typedef struct {
+  int fdr_lba;
+  int root_lba;
+  int check;
+} FileSystemMeta;
+
+typedef union {
+  short arr[256];
+  FileSystemMeta meta;
+} FileSystemMetaUnion;
+
+FileSystemStatus init_file_system();
 FileSystemStatus fs_create_fileder(const char* name);
 void fs_report_status(FileSystemStatus status);
 void fs_list();
