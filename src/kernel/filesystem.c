@@ -1,7 +1,3 @@
-// TODO delete file/folder
-// TODO change directory
-// TODO rewrite with fileders
-
 #include "../drivers/disk.h"
 #include "../drivers/printing.h"
 #include "../utils/data_structures.h"
@@ -336,7 +332,17 @@ FileSystemStatus fs_delete_fileder(const char* name) {
 }
 
 FileSystemStatus fs_change_fileder(const char* name) {
-  int lba = fileder_find_lba(name);
+  int lba;
+  if (strcmp(name, "<-")) {
+    Fileder* f = fileder_from_disk_alloc(CURRENT_FILEDER);
+    if (f->parent_lba == 0) {
+      return FS_ERR_FILE_NOT_EXIST;
+    }
+    lba = f->parent_lba;
+    fileder_free(f);
+  } else {
+    lba = fileder_find_lba(name);
+  }
   unwrap_int(lba, FS_ERR_FILE_NOT_EXIST);
   CURRENT_FILEDER = lba;
   return FS_SUCCESS;

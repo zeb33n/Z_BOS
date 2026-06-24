@@ -133,7 +133,11 @@ void parse_cmd(char* cmd) {
 
   } else if (strcmp(tokens.values[0].values, "rf")) {
     DynStr buff;
-    fs_report_status(fs_fileder_read_alloc(tokens.values[1].values, &buff));
+    FileSystemStatus s = fs_fileder_read_alloc(tokens.values[1].values, &buff);
+    if (s != FS_SUCCESS) {
+      fs_report_status(s);
+      return;
+    }
     sprintln(buff.values);
     kfree(buff.values);
 
@@ -143,7 +147,7 @@ void parse_cmd(char* cmd) {
   } else if (strcmp(tokens.values[0].values, "cf")) {
     fs_report_status(fs_change_fileder(tokens.values[1].values));
 
-  } else if (strcmp(cmd, "list")) {
+  } else if (strcmp(cmd, "lf")) {
     fs_list();
 
   } else {
