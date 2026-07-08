@@ -16,12 +16,15 @@ ASMELFS := src/kernel/idtasm src/bootloader/kernel_entry
 
 all: prebuild build
 
+rerun: $(BIN)/OS.bin
+	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide  -m 256M
+
 run: prebuild build resize
-	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide,  -m 256M
+	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide  -m 256M
 
 test: CFLAGS += -DTEST
 test: prebuild build resize
-	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide,  -m 256M
+	qemu-system-x86_64 -drive format=raw,file=$(BIN)/OS.bin,index=0,if=ide  -m 256M
 
 resize:
 	qemu-img resize $(BIN)/OS.bin 1G

@@ -1,3 +1,4 @@
+#include "data_structures.h"
 #include "maths.h"
 #include "strings.h"
 
@@ -55,4 +56,26 @@ StrStatus str2uint(int* out, const char* str, int base) {
     j++;
   }
   return STR_SUC;
+}
+
+DynStrArr* strsplit_alloc(const char* str) {
+  DynStrArr* out;
+  dyn_init((*out));
+  for (int i = 0;; i++) {
+    DynStr part;
+    dyn_init(part);
+    for (; (str[i] != ' ') && (str[i] != '\0'); i++) {
+      dyn_append(part, str[i]);
+    }
+    dyn_append(part, '\0');
+    dyn_append((*out), part);
+  }
+  return out;
+}
+
+void dynstrarr_free(DynStrArr arr) {
+  for (int i = 0; i < arr.count; i++) {
+    kfree(arr.values[i].values);
+  }
+  kfree(arr.values);
 }
